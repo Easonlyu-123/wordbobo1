@@ -14,7 +14,7 @@
    </LaunchAction>
    <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" useCustomWorkingDirectory="NO">
       <BuildableProductRunnable>
-         <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="30000006" BuildableName="WordBoBo.app" BuildableName="WordBoBo" ReferencedContainer="container:WordBoBo.xcodeproj"/>
+         <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="30000006" BuildableName="WordBoBo.app" BlueprintName="WordBoBo" ReferencedContainer="container:WordBoBo.xcodeproj"/>
       </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction buildConfiguration="Debug"/>
