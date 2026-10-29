@@ -1,0 +1,112 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A0000001 /* WordBoBoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000002; };
+		A0000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000004; };
+		A0000005 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000006; };
+		A0000007 /* WordConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000008; };
+		A0000009 /* StudyRouterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A000000A; };
+		A000000B /* StudyStage1View.swift in Sources */ = {isa = PBXBuildFile; fileRef = A000000C; };
+		A000000D /* StudyStage2View.swift in Sources */ = {isa = PBXBuildFile; fileRef = A000000E; };
+		A000000F /* StudyStage3View.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000010; };
+		A0000011 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000012; };
+		A0000013 /* ManualInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000014; };
+		A0000015 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000016; };
+		A0000017 /* Word.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000018; };
+		A0000019 /* WordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A000001A; };
+		A000001B /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A000001C; };
+		A000001D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A000001E; };
+		A000001F /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A0000020; };
+		A0000021 /* WordBoBo.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = A0000022; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A0000002 /* WordBoBoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBoApp.swift; sourceTree = "<group>"; };
+		A0000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A0000006 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		A0000008 /* WordConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordConfirmView.swift; sourceTree = "<group>"; };
+		A000000A /* StudyRouterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyRouterView.swift; sourceTree = "<group>"; };
+		A000000C /* StudyStage1View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage1View.swift; sourceTree = "<group>"; };
+		A000000E /* StudyStage2View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage2View.swift; sourceTree = "<group>"; };
+		A0000010 /* StudyStage3View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage3View.swift; sourceTree = "<group>"; };
+		A0000012 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		A0000014 /* ManualInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualInputView.swift; sourceTree = "<group>"; };
+		A0000016 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		A0000018 /* Word.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Word.swift; sourceTree = "<group>"; };
+		A000001A /* WordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordStore.swift; sourceTree = "<group>"; };
+		A000001C /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
+		A000001E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A0000020 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A0000022 /* WordBoBo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WordBoBo.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A0000023 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A0000024 = {isa = PBXGroup; children = (A0000025 /* WordBoBo */, A0000026 /* Products */); sourceTree = "<group>"; };
+		A0000025 /* WordBoBo */ = {isa = PBXGroup; children = (A0000002, A0000004, A0000006, A0000008, A000000A, A000000C, A000000E, A0000010, A0000012, A0000014, A0000016, A0000018, A000001A, A000001C, A000001E, A0000020, A0000022); path = WordBoBo; sourceTree = "<group>"; };
+		A0000026 /* Products */ = {isa = PBXGroup; children = (A0000027 /* WordBoBo.app */); path = Products; sourceTree = "<group>"; };
+		A0000027 /* WordBoBo.app */ = {isa = PBXGroup; children = (); path = WordBoBo.app; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A0000028 /* WordBoBo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A000002F;
+			buildPhases = (A0000029 /* Sources */, A0000023 /* Frameworks */, A000002A /* Resources */);
+			buildRules = ();
+			dependencies = ();
+			name = WordBoBo;
+			productName = WordBoBo;
+			productReference = A0000027;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A000002B = {
+			isa = PBXProject;
+			attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500;};
+			buildConfigurationList = A000002C;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "en";
+			hasScannedForEncodings = 0;
+			knownRegions = (en, "zh-Hans", Base);
+			mainGroup = A0000024;
+			productRefGroup = A0000026;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (A0000028);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A000002A /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A000001D, A000001F, A0000021); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A0000029 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A0000001, A0000003, A0000005, A0000007, A0000009, A000000B, A000000D, A000000F, A0000011, A0000013, A0000015, A0000017, A0000019, A000001B); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A0000030 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		A0000031 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = s; GCC_PREPROCESSOR_DEFINITIONS = ("NDEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
+		A0000032 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; INFOPLIST_KEY_CameraUsageDescription = "需要相机权限来拍照识别单词"; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要麦克风权限来朗读单词发音"; INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要相册权限来选择照片识别单词"; INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要语音权限来朗读单词发音"; INFOPLIST_KEY_UIApplicationSceneManifest = {UIApplicationSupportsMultipleScenes = NO; UISceneConfigurations = {ApplicationSessionRole = ({UISceneConfigurationName = "Default Configuration"; UISceneDelegateClassName = "$(PRODUCT_MODULE_NAME).SceneDelegate"; },);};}; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		A0000033 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; INFOPLIST_KEY_CameraUsageDescription = "需要相机权限来拍照识别单词"; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要麦克风权限来朗读单词发音"; INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要相册权限来选择照片识别单词"; INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要语音权限来朗读单词发音"; INFOPLIST_KEY_UIApplicationSceneManifest = {UIApplicationSupportsMultipleScenes = NO; UISceneConfigurations = {ApplicationSessionRole = ({UISceneConfigurationName = "Default Configuration"; UISceneDelegateClassName = "$(PRODUCT_MODULE_NAME).SceneDelegate"; },);};}; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A000002C = {isa = XCConfigurationList; buildConfigurations = (A0000030 /* Debug */, A0000031 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A000002F = {isa = XCConfigurationList; buildConfigurations = (A0000032 /* Debug */, A0000033 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = A000002B;
+}

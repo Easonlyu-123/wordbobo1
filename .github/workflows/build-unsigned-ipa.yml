@@ -2,9 +2,9 @@ name: Build Unsigned IPA
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -18,10 +18,11 @@ jobs:
         with:
           xcode-version: "26.6"
 
-      - name: Generate Xcode project
+      - name: Create Xcode project
         run: |
-          which xcodegen || brew install xcodegen
-          xcodegen generate
+          mkdir -p WordBoBo.xcodeproj
+          cp .github/project.pbxproj WordBoBo.xcodeproj/project.pbxproj
+          echo "Xcode project created"
 
       - name: Build for generic iOS device (no signing)
         run: |
@@ -38,40 +39,21 @@ jobs:
       - name: Locate built .app
         run: |
           set -e
-          # Search in build/Products relative to project
-          cd "${{ github.workspace }}"
           APP_PATH=$(find . -path "*/build/Products/Release-iphoneos/*.app" -type d | head -1)
           echo "Found app at: $APP_PATH"
           echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
-
-          # Show binary info
           ls -la "$APP_PATH"
-          file "$APP_PATH/WordBoBo"
 
       - name: Package unsigned IPA
         run: |
           set -e
           APP_PATH="${{ env.APP_PATH }}"
-          echo "Packaging: $APP_PATH"
-
-          # Create IPA structure
           mkdir -p ~/ipa/Payload
           cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
-
-          # Remove any embedded provisioning profile
           rm -f ~/ipa/Payload/WordBoBo.app/embedded.mobileprovision 2>/dev/null || true
-
-          # Strip signature if present
-          /usr/bin/xcrun codesign --remove "$APP_PATH/WordBoBo" 2>/dev/null || true
-
-          # Zip as IPA
           cd ~/ipa
           zip -r WordBoBo-unsigned.ipa Payload/
-
-          echo "=== IPA Info ==="
           ls -lh WordBoBo-unsigned.ipa
-          echo "=== IPA Contents ==="
-          unzip -l WordBoBo-unsigned.ipa | head -20
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
