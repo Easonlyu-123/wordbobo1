@@ -16,25 +16,212 @@ jobs:
         with:
           xcode-version: "26.6"
 
-      - name: Create iOS app project using xcodebuild template
+      - name: Create Xcode project
         run: |
           cd "${{ github.workspace }}"
-          
-          # Create from single view app template
-          xcodebuild -createProject \
-            -projectType "application" \
-            -platform iphoneos \
-            -template "Single View App" \
-            -projectName WordBoBo \
-            WordBoBo.xcodeproj 2>&1 || true
-          
-          # Check what was created
-          ls -la WordBoBo.xcodeproj/ 2>/dev/null || echo "template method failed"
-          ls WordBoBo.xcodeproj/*.pbxproj 2>/dev/null || echo "no pbxproj"
 
-      - name: Check available templates
-        if: always()
+          # Create project directory
+          mkdir -p WordBoBo.xcodeproj
+          mkdir -p WordBoBo/Resources
+          mkdir -p WordBoBo/Assets.xcassets
+
+          # Copy all source files into flat WordBoBo/ directory
+          cp WordBoBo/WordBoBoApp.swift WordBoBo/
+          cp WordBoBo/Views/ContentView.swift WordBoBo/
+          cp WordBoBo/Views/CameraPreviewView.swift WordBoBo/
+          cp WordBoBo/Views/WordConfirmView.swift WordBoBo/
+          cp WordBoBo/Views/StudyRouterView.swift WordBoBo/
+          cp WordBoBo/Views/StudyStage1View.swift WordBoBo/
+          cp WordBoBo/Views/StudyStage2View.swift WordBoBo/
+          cp WordBoBo/Views/StudyStage3View.swift WordBoBo/
+          cp WordBoBo/Views/HistoryView.swift WordBoBo/
+          cp WordBoBo/Views/ManualInputView.swift WordBoBo/
+          cp WordBoBo/SceneDelegate.swift WordBoBo/
+          cp WordBoBo/Models/Word.swift WordBoBo/
+          cp WordBoBo/Services/WordStore.swift WordBoBo/
+          cp WordBoBo/Services/OCRService.swift WordBoBo/
+          cp WordBoBo/Info.plist WordBoBo/
+          cp WordBoBo/Resources/WordBoBo.entitlements WordBoBo/Resources/
+
+          # Create asset catalog placeholder
+          cat > WordBoBo/Assets.xcassets/Contents.json << 'EOF'
+{"info":{"version":1,"author":"xcode"}}
+EOF
+
+          # Create workspace shared data dirs
+          mkdir -p WordBoBo.xcodeproj/xcshareddata/xcschemes
+          mkdir -p WordBoBo.xcodeproj/project.xcworkspace/xcshareddata
+
+          # Generate project.pbxproj via Python
+          python3 << 'PYEOF'
+import os
+
+project_dir = "WordBoBo.xcodeproj"
+os.makedirs(project_dir, exist_ok=True)
+
+src_files = [
+    "WordBoBoApp.swift", "ContentView.swift", "CameraPreviewView.swift",
+    "WordConfirmView.swift", "StudyRouterView.swift", "StudyStage1View.swift",
+    "StudyStage2View.swift", "StudyStage3View.swift", "HistoryView.swift",
+    "ManualInputView.swift", "SceneDelegate.swift", "Word.swift",
+    "WordStore.swift", "OCRService.swift",
+]
+
+src_ids = [f"{1000 + i:08x}" for i in range(len(src_files))]
+res_files = ["Assets.xcassets", "Info.plist", "Resources/WordBoBo.entitlements"]
+res_ids = [f"{2000 + i:08x}" for i in range(len(res_files))]
+
+L = []
+L.append("// !$*UTF8*$!\n{")
+L.append("\tarchiveVersion = 1;")
+L.append("\tclasses = {};")
+L.append("\tobjectVersion = 54;")
+L.append("\tobjects = {")
+
+# PBXBuildFile
+L.append("/* Begin PBXBuildFile section */")
+for i, f in enumerate(src_files):
+    L.append(f"\t\t{src_ids[i]} /* {f} in Sources */ = {{isa = PBXBuildFile; fileRef = {int(src_ids[i]) + 1000:08x}; }};")
+L.append("/* End PBXBuildFile section */\n")
+
+# PBXFileReference
+L.append("/* Begin PBXFileReference section */")
+for i, f in enumerate(src_files):
+    L.append(f"\t\t{int(src_ids[i]) + 1000:08x} /* {f} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = \"{f}\"; sourceTree = \"<group>\"; }};")
+for i, f in enumerate(res_files):
+    ftype = "folder.assetcatalog" if f.endswith(".xcassets") else ("text.plist.entitlements" if f.endswith(".entitlements") else "text.plist.xml")
+    L.append(f"\t\t{res_ids[i]} /* {f} */ = {{isa = PBXFileReference; lastKnownFileType = {ftype}; path = \"{f}\"; sourceTree = \"<group>\"; }};")
+L.append("/* End PBXFileReference section */\n")
+
+# PBXFrameworksBuildPhase
+L.append("/* Begin PBXFrameworksBuildPhase section */")
+L.append("\t\t30000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };")
+L.append("/* End PBXFrameworksBuildPhase section */\n")
+
+# PBXGroup
+L.append("/* Begin PBXGroup section */")
+grp = ", ".join(f"{src_ids[i]} /* {src_files[i]} */" for i in range(len(src_files))) + ", " + ", ".join(f"{res_ids[i]} /* {res_files[i]} */" for i in range(len(res_files)))
+L.append(f"\t\t30000002 = {{isa = PBXGroup; children = ({grp}); sourceTree = \"<group>\"; }};")
+L.append(f"\t\t30000003 /* WordBoBo */ = {{isa = PBXGroup; children = ({grp}); path = WordBoBo; sourceTree = \"<group>\"; }};")
+L.append("\t\t30000004 /* Products */ = {isa = PBXGroup; children = (30000005 /* WordBoBo.app */); path = Products; sourceTree = \"<group>\"; };")
+L.append("\t\t30000005 /* WordBoBo.app */ = {isa = PBXGroup; children = (); path = WordBoBo.app; sourceTree = \"<group>\"; };")
+L.append("/* End PBXGroup section */\n")
+
+# PBXNativeTarget
+L.append("/* Begin PBXNativeTarget section */")
+L.append("\t\t30000006 /* WordBoBo */ = {\n\t\t\tisa = PBXNativeTarget;\n\t\t\tbuildConfigurationList = 3000000D;\n\t\t\tbuildPhases = (30000007 /* Sources */, 30000001 /* Frameworks */, 30000008 /* Resources */);\n\t\t\tbuildRules = ();\n\t\t\tdependencies = ();\n\t\t\tname = WordBoBo;\n\t\t\tproductName = WordBoBo;\n\t\t\tproductReference = 30000005;\n\t\t\tproductType = \"com.apple.product-type.application\";\n\t\t};")
+L.append("/* End PBXNativeTarget section */\n")
+
+# PBXProject
+L.append("/* Begin PBXProject section */")
+L.append("\t\t30000009 = {\n\t\t\tisa = PBXProject;\n\t\t\tattributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500;};\n\t\t\tbuildConfigurationList = 3000000A;\n\t\t\tcompatibilityVersion = \"Xcode 14.0\";\n\t\t\tdevelopmentRegion = \"en\";\n\t\t\thasScannedForEncodings = 0;\n\t\t\tknownRegions = (en, \"zh-Hans\", Base);\n\t\t\tmainGroup = 30000002;\n\t\t\tproductRefGroup = 30000004;\n\t\t\tprojectDirPath = \"\";\n\t\t\tprojectRoot = \"\";\n\t\t\ttargets = (30000006);\n\t\t};")
+L.append("/* End PBXProject section */\n")
+
+# PBXResourcesBuildPhase
+res_str = ", ".join(res_ids)
+L.append("/* Begin PBXResourcesBuildPhase section */")
+L.append(f"\t\t30000008 /* Resources */ = {{isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ({res_str}); runOnlyForDeploymentPostprocessing = 0; }};")
+L.append("/* End PBXResourcesBuildPhase section */\n")
+
+# PBXSourcesBuildPhase
+src_str = ", ".join(src_ids)
+L.append("/* Begin PBXSourcesBuildPhase section */")
+L.append(f"\t\t30000007 /* Sources */ = {{isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ({src_str}); runOnlyForDeploymentPostprocessing = 0; }};")
+L.append("/* End PBXSourcesBuildPhase section */\n")
+
+# XCBuildConfiguration
+L.append("/* Begin XCBuildConfiguration section */")
+L.append('\t\t3000000B /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };')
+L.append('\t\t3000000C /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = s; GCC_PREPROCESSOR_DEFINITIONS = ("NDEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };')
+L.append('\t\t3000000E /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; INFOPLIST_FILE = WordBoBo/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };')
+L.append('\t\t3000000F /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; INFOPLIST_FILE = WordBoBo/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };')
+L.append("/* End XCBuildConfiguration section */\n")
+
+# XCConfigurationList
+L.append("/* Begin XCConfigurationList section */")
+L.append("\t\t3000000A = {isa = XCConfigurationList; buildConfigurations = (3000000B /* Debug */, 3000000C /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };")
+L.append("\t\t3000000D = {isa = XCConfigurationList; buildConfigurations = (3000000E /* Debug */, 3000000F /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };")
+L.append("/* End XCConfigurationList section */\n")
+
+L.append("\t};")
+L.append("\trootObject = 30000009;")
+L.append("}")
+
+with open(os.path.join(project_dir, "project.pbxproj"), "w") as f:
+    f.write("\n".join(L))
+
+print("project.pbxproj generated")
+
+# Create xcscheme
+with open("WordBoBo.xcodeproj/xcshareddata/xcschemes/WordBoBo.xcscheme", "w") as f:
+    f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+    f.write('<Scheme LastUpgradeVersion="1500" version="1.7">\n')
+    f.write('   <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">\n')
+    f.write('      <BuildActionEntries>\n')
+    f.write('         <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForInstalling="YES" buildForAnalyzing="YES">\n')
+    f.write('            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="30000006" BuildableName="WordBoBo.app" BlueprintName="WordBoBo" ReferencedContainer="container:WordBoBo.xcodeproj"/>\n')
+    f.write('         </BuildActionEntry>\n')
+    f.write('      </BuildActionEntries>\n')
+    f.write('   </BuildAction>\n')
+    f.write('   <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO">\n')
+    f.write('      <BuildableProductRunnable>\n')
+    f.write('         <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="30000006" BuildableName="WordBoBo.app" BlueprintName="WordBoBo" ReferencedContainer="container:WordBoBo.xcodeproj"/>\n')
+    f.write('      </BuildableProductRunnable>\n')
+    f.write('   </LaunchAction>\n')
+    f.write('   <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" useCustomWorkingDirectory="NO">\n')
+    f.write('      <BuildableProductRunnable>\n')
+    f.write('         <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="30000006" BuildableName="WordBoBo.app" BlueprintName="WordBoBo" ReferencedContainer="container:WordBoBo.xcodeproj"/>\n')
+    f.write('      </BuildableProductRunnable>\n')
+    f.write('   </ProfileAction>\n')
+    f.write('   <AnalyzeAction buildConfiguration="Debug"/>\n')
+    f.write('   <ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>\n')
+    f.write('</Scheme>\n')
+print("scheme created")
+
+      - name: Validate project
         run: |
-          ls /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Xcode/Templates/File\ Templates/Source/ 2>/dev/null || \
-          ls /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Xcode/Templates/Project\ Templates/iOS/Application/ 2>/dev/null || \
-          echo "checking templates..." && find /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform -name "*.xctemplate" -maxdepth 5 2>/dev/null | head -20
+          cd "${{ github.workspace }}"
+          xcodebuild -list -project WordBoBo.xcodeproj 2>&1
+
+      - name: Build for generic iOS device (no signing)
+        run: |
+          set -e
+          cd "${{ github.workspace }}"
+          xcodebuild build \
+            -project WordBoBo.xcodeproj \
+            -scheme WordBoBo \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_CODE_SIGNING=NO
+
+      - name: Locate built .app
+        run: |
+          set -e
+          cd "${{ github.workspace }}"
+          APP_PATH=$(find . -path "*/build/Products/Release-iphoneos/*.app" -type d | head -1)
+          echo "Found app at: $APP_PATH"
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+          ls -la "$APP_PATH"
+          file "$APP_PATH/WordBoBo"
+
+      - name: Package unsigned IPA
+        run: |
+          set -e
+          APP_PATH="${{ env.APP_PATH }}"
+          mkdir -p ~/ipa/Payload
+          cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
+          rm -f ~/ipa/Payload/WordBoBo.app/embedded.mobileprovision 2>/dev/null || true
+          cd ~/ipa
+          zip -r WordBoBo-unsigned.ipa Payload/
+          echo "=== IPA INFO ==="
+          ls -lh WordBoBo-unsigned.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WordBoBo-unsigned-ipa
+          path: ~/ipa/WordBoBo-unsigned.ipa
+          retention-days: 30

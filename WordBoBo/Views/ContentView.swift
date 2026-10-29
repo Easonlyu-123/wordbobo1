@@ -162,3 +162,30 @@ struct ProcessingOverlay: View {
         }
     }
 }
+
+struct LiquidGlassBackground: View {
+    var body: some View {
+        ZStack {
+            // Base dark gradient
+            LinearGradient(
+                colors: [Color(red: 0.08, green: 0.08, blue: 0.18), Color(red: 0.02, green: 0.02, blue: 0.08)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            // Animated orbs for liquid feel
+            Circle()
+                .fill(LinearGradient(colors: [.cyan.opacity(0.15), .purple.opacity(0.05)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .frame(width: 400, height: 400)
+                .blur(radius: 80)
+                .offset(x: -100, y: -150)
+            
+            Circle()
+                .fill(LinearGradient(colors: [.blue.opacity(0.12), .pink.opacity(0.04)], startPoint: .bottomTrailing, endPoint: .topLeading))
+                .frame(width: 350, height: 350)
+                .blur(radius: 60)
+                .offset(x: 120, y: 100)
+        }
+    }
+}
