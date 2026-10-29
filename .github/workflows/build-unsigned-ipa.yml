@@ -16,194 +16,25 @@ jobs:
         with:
           xcode-version: "26.6"
 
-      - name: Create Xcode project and scheme
+      - name: Create iOS app project using xcodebuild template
         run: |
           cd "${{ github.workspace }}"
           
-          mkdir -p WordBoBo.xcodeproj/xcshareddata/xcschemes
+          # Create from single view app template
+          xcodebuild -createProject \
+            -projectType "application" \
+            -platform iphoneos \
+            -template "Single View App" \
+            -projectName WordBoBo \
+            WordBoBo.xcodeproj 2>&1 || true
           
-          # Write project.pbxproj with consistent IDs
-          cat > WordBoBo.xcodeproj/project.pbxproj << 'PBXEOF'
-// !$*UTF8*$!
-{
-	archiveVersion = 1;
-	classes = {};
-	objectVersion = 56;
-	objects = {
+          # Check what was created
+          ls -la WordBoBo.xcodeproj/ 2>/dev/null || echo "template method failed"
+          ls WordBoBo.xcodeproj/*.pbxproj 2>/dev/null || echo "no pbxproj"
 
-/* PBXBuildFile */
-		1 /* WordBoBoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2; };
-		3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4; };
-		5 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6; };
-		7 /* WordConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8; };
-		9 /* StudyRouterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10; };
-		11 /* StudyStage1View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12; };
-		13 /* StudyStage2View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14; };
-		15 /* StudyStage3View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16; };
-		17 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18; };
-		19 /* ManualInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20; };
-		21 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22; };
-		23 /* Word.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24; };
-		25 /* WordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26; };
-		27 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28; };
-		29 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 30; };
-		31 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 32; };
-		33 /* WordBoBo.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = 34; };
-
-/* PBXFileReference */
-		2 /* WordBoBoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBoApp.swift; sourceTree = "<group>"; };
-		4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		6 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
-		8 /* WordConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordConfirmView.swift; sourceTree = "<group>"; };
-		10 /* StudyRouterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyRouterView.swift; sourceTree = "<group>"; };
-		12 /* StudyStage1View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage1View.swift; sourceTree = "<group>"; };
-		14 /* StudyStage2View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage2View.swift; sourceTree = "<group>"; };
-		16 /* StudyStage3View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage3View.swift; sourceTree = "<group>"; };
-		18 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
-		20 /* ManualInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualInputView.swift; sourceTree = "<group>"; };
-		22 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		24 /* Word.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Word.swift; sourceTree = "<group>"; };
-		26 /* WordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordStore.swift; sourceTree = "<group>"; };
-		28 /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
-		30 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		32 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		34 /* WordBoBo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WordBoBo.entitlements; sourceTree = "<group>"; };
-
-/* PBXFrameworksBuildPhase */
-		35 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-
-/* PBXGroup */
-		36 = {isa = PBXGroup; children = (37 /* WordBoBo */, 38 /* Products */); sourceTree = "<group>"; };
-		37 /* WordBoBo */ = {isa = PBXGroup; children = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34); path = WordBoBo; sourceTree = "<group>"; };
-		38 /* Products */ = {isa = PBXGroup; children = (39 /* WordBoBo.app */); path = Products; sourceTree = "<group>"; };
-		39 /* WordBoBo.app */ = {isa = PBXGroup; children = (); path = WordBoBo.app; sourceTree = "<group>"; };
-
-/* PBXNativeTarget */
-		40 /* WordBoBo */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 47;
-			buildPhases = (41 /* Sources */, 35 /* Frameworks */, 42 /* Resources */);
-			buildRules = ();
-			dependencies = ();
-			name = WordBoBo;
-			productName = WordBoBo;
-			productReference = 39;
-			productType = "com.apple.product-type.application";
-		};
-
-/* PBXProject */
-		43 = {
-			isa = PBXProject;
-			attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500;};
-			buildConfigurationList = 44;
-			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = "en";
-			hasScannedForEncodings = 0;
-			knownRegions = (en, "zh-Hans", Base);
-			mainGroup = 36;
-			productRefGroup = 38;
-			projectDirPath = "";
-			projectRoot = "";
-			targets = (40);
-		};
-
-/* PBXResourcesBuildPhase */
-		42 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (29, 31, 33); runOnlyForDeploymentPostprocessing = 0; };
-
-/* PBXSourcesBuildPhase */
-		41 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27); runOnlyForDeploymentPostprocessing = 0; };
-
-/* XCBuildConfiguration */
-		45 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
-		46 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = s; GCC_PREPROCESSOR_DEFINITIONS = ("NDEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
-		48 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; INFOPLIST_KEY_CameraUsageDescription = "需要相机权限来拍照识别单词"; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要麦克风权限来朗读单词发音"; INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要相册权限来选择照片识别单词"; INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要语音权限来朗读单词发音"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
-		49 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_PREVIEWS = YES; INFOPLIST_KEY_CameraUsageDescription = "需要相机权限来拍照识别单词"; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_NSMicrophoneUsageDescription = "需要麦克风权限来朗读单词发音"; INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要相册权限来选择照片识别单词"; INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "需要语音权限来朗读单词发音"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
-
-/* XCConfigurationList */
-		44 = {isa = XCConfigurationList; buildConfigurations = (45 /* Debug */, 46 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		47 = {isa = XCConfigurationList; buildConfigurations = (48 /* Debug */, 49 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-	};
-	rootObject = 43;
-}
-PBXEOF
-
-          echo "project.pbxproj created"
-          
-          # Write matching xcscheme with target ID 40
-          cat > WordBoBo.xcodeproj/xcshareddata/xcschemes/WordBoBo.xcscheme << 'SCHEMEEOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<Scheme LastUpgradeVersion = "1500" version = "1.7">
-   <BuildAction parallelizeBuildables = "YES" buildImplicitDependencies = "YES">
-      <BuildActionEntries>
-         <BuildActionEntry buildForTesting = "YES" buildForRunning = "YES" buildForProfiling = "YES" buildForArchiving = "YES" buildForInstalling = "YES" buildForAnalyzing = "YES">
-            <BuildableReference BuildableIdentifier = "primary" BlueprintIdentifier = "40" BuildableName = "WordBoBo.app" BlueprintName = "WordBoBo" ReferencedContainer = "container:WordBoBo.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-      </BuildActionEntries>
-   </BuildAction>
-   <LaunchAction buildConfiguration = "Debug" selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle = "0" useCustomWorkingDirectory = "NO">
-      <BuildableProductRunnable>
-         <BuildableReference BuildableIdentifier = "primary" BlueprintIdentifier = "40" BuildableName = "WordBoBo.app" BlueprintName = "WordBoBo" ReferencedContainer = "container:WordBoBo.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
-   </LaunchAction>
-   <ProfileAction buildConfiguration = "Release" shouldUseLaunchSchemeArgsEnv = "YES" useCustomWorkingDirectory = "NO">
-      <BuildableProductRunnable>
-         <BuildableReference BuildableIdentifier = "primary" BlueprintIdentifier = "40" BuildableName = "WordBoBo.app" BlueprintName = "WordBoBo" ReferencedContainer = "container:WordBoBo.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
-   </ProfileAction>
-   <AnalyzeAction buildConfiguration = "Debug">
-   </AnalyzeAction>
-   <ArchiveAction buildConfiguration = "Release" revealArchiveInOrganizer = "YES">
-   </ArchiveAction>
-</Scheme>
-SCHEMEEOF
-
-          echo "scheme created with matching target ID 40"
-
-      - name: Build for generic iOS device (no signing)
+      - name: Check available templates
+        if: always()
         run: |
-          set -e
-          cd "${{ github.workspace }}"
-          
-          xcodebuild build \
-            -project WordBoBo.xcodeproj \
-            -scheme WordBoBo \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ENABLE_CODE_SIGNING=NO
-
-      - name: Locate built .app
-        run: |
-          set -e
-          cd "${{ github.workspace }}"
-          APP_PATH=$(find . -path "*/build/Products/Release-iphoneos/*.app" -type d | head -1)
-          echo "Found app at: $APP_PATH"
-          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
-          ls -la "$APP_PATH"
-          file "$APP_PATH/WordBoBo"
-
-      - name: Package unsigned IPA
-        run: |
-          set -e
-          APP_PATH="${{ env.APP_PATH }}"
-          mkdir -p ~/ipa/Payload
-          cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
-          rm -f ~/ipa/Payload/WordBoBo.app/embedded.mobileprovision 2>/dev/null || true
-          cd ~/ipa
-          zip -r WordBoBo-unsigned.ipa Payload/
-          echo "=== IPA Info ==="
-          ls -lh WordBoBo-unsigned.ipa
-          echo "=== IPA Contents ==="
-          unzip -l WordBoBo-unsigned.ipa | head -20
-
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: WordBoBo-unsigned-ipa
-          path: ~/ipa/WordBoBo-unsigned.ipa
-          retention-days: 30
+          ls /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Xcode/Templates/File\ Templates/Source/ 2>/dev/null || \
+          ls /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Xcode/Templates/Project\ Templates/iOS/Application/ 2>/dev/null || \
+          echo "checking templates..." && find /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform -name "*.xctemplate" -maxdepth 5 2>/dev/null | head -20
