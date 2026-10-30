@@ -16,54 +16,23 @@ jobs:
         with:
           xcode-version: "26.6"
 
-      - name: Create Xcode project
-        run: |
-          mkdir -p WordBoBo.xcodeproj/xcshareddata/xcschemes
-          cp .github/project.pbxproj WordBoBo.xcodeproj/project.pbxproj
-          cp .github/WordBoBo.xcscheme WordBoBo.xcodeproj/xcshareddata/xcschemes/
+      - name: Install xcodegen
+        run: brew install xcodegen
 
-      - name: Copy sources into project
-        run: |
-          set -eux
-          mkdir -p WordBoBo/Resources WordBoBo/Assets.xcassets WordBoBo/Views WordBoBo/Models WordBoBo/Services
-          ls -la WordBoBo/
-          ls -la WordBoBo/Views/
-          ls -la WordBoBo/Services/
-          ls -la WordBoBo/Models/
-          cp WordBoBo/WordBoBoApp.swift WordBoBo/
-          cp WordBoBo/Views/ContentView.swift WordBoBo/
-          cp WordBoBo/Views/CameraPreviewView.swift WordBoBo/
-          cp WordBoBo/Views/WordConfirmView.swift WordBoBo/
-          cp WordBoBo/Views/StudyRouterView.swift WordBoBo/
-          cp WordBoBo/Views/StudyStage1View.swift WordBoBo/
-          cp WordBoBo/Views/StudyStage2View.swift WordBoBo/
-          cp WordBoBo/Views/StudyStage3View.swift WordBoBo/
-          cp WordBoBo/Views/HistoryView.swift WordBoBo/
-          cp WordBoBo/Views/ManualInputView.swift WordBoBo/
-          cp WordBoBo/Models/Word.swift WordBoBo/
-          cp WordBoBo/Services/WordStore.swift WordBoBo/
-          cp WordBoBo/Services/OCRService.swift WordBoBo/
-          cp WordBoBo/Info.plist WordBoBo/
-          cp WordBoBo/Resources/WordBoBo.entitlements WordBoBo/Resources/
-          echo '{"info":{"version":1,"author":"xcode"}}' > WordBoBo/Assets.xcassets/Contents.json
-          echo "All files copied successfully"
-          ls -la WordBoBo/
+      - name: Generate Xcode project with xcodegen
+        run: xcodegen generate
 
-      - name: Clean build
-        run: xcodebuild clean -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS'
-
-      - name: Archive for generic iOS device
+      - name: Clean and Archive
         run: |
-          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/archive.log
+          xcodebuild clean archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/archive.log
 
       - name: Check archive
         run: |
           if [ ! -d "./build/WordBoBo.xcarchive" ]; then
             echo "Archive FAILED"
-            cat /tmp/archive.log | tail -40
+            tail -50 /tmp/archive.log
             exit 1
           fi
-          echo "Archive OK"
 
       - name: Export unsigned IPA
         run: |
