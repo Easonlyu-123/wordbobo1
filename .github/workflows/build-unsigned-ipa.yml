@@ -19,16 +19,17 @@ jobs:
       - name: Install xcodegen
         run: brew install xcodegen
 
-      - name: Generate Xcode project with xcodegen
+      -name: Generate Xcode project with xcodegen
         run: xcodegen generate
 
-      - name: Build for generic iOS device
+      - name: Build with explicit derived data path
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
             -destination 'generic/platform=iOS' \
+            -derivedDataPath ./DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -36,26 +37,24 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-      - name: Find .app everywhere
+      - name: Find .app
         run: |
-          echo "=== Search 1: build/Products ==="
-          find . -path "*/build/Products/*" -name "*.app" -type d 2>&1
-          echo "=== Search 2: DerivedData ==="
-          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>&1 | head -10
-          echo "=== Search 3: all .app ==="
-          find . -name "*.app" -type d 2>&1
-          echo "=== Search 4: build dir ==="
-          find ./build -type f -o -type d 2>&1 | head -30
-          echo "=== Build log tail ==="
-          tail -30 /tmp/build.log
+          echo "=== DerivedData ==="
+          find ./DerivedData -name "*.app" -type d 2>&1
+          find ./DerivedData -name "*.app" -type d | head -1
+          APP_PATH=$(find ./DerivedData -name "*.app" -type d | head -1)
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app found! Build log:"
+            tail -40 /tmp/build.log
+            exit 1
+          fi
+          echo "Found: $APP_PATH"
+          ls -la "$APP_PATH"
 
       - name: Package IPA
         run: |
-          APP_PATH=$(find . -name "*.app" -type d | head -1)
-          if [ -z "$APP_PATH" ]; then
-            echo "No .app found anywhere, cannot create IPA"
-            exit 1
-          fi
+          APP_PATH="${{ env.APP_PATH }}"
           mkdir -p ~/ipa/Payload
           cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
           cd ~/ipa
