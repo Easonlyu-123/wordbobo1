@@ -22,29 +22,30 @@ jobs:
       - name: Generate Xcode project with xcodegen
         run: xcodegen generate
 
-      - name: Build for iOS (any destination, focus on output)
+      - name: Build for iOS Simulator
         run: |
-          xcodebuild build             -project WordBoBo.xcodeproj             -scheme WordBoBo             -configuration Release             -sdk iphoneos             CODE_SIGN_IDENTITY=""             CODE_SIGNING_REQUIRED=NO             CODE_SIGNING_ALLOWED=NO             ENABLE_CODE_SIGNING=NO             2>&1 | tee /tmp/build.log
+          xcodebuild build \
+            -project WordBoBo.xcodeproj \
+            -scheme WordBoBo \
+            -configuration Release \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -derivedDataPath ./DerivedData \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_CODE_SIGNING=NO \
+            2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-      - name: Find .app (all locations)
+      - name: Find .app in DerivedData
         run: |
-          echo "=== Search everywhere ==="
-          find /Users/runner -name "WordBoBo.app" -type d 2>&1 | head -5
-          find /Users/runner -name "*.app" -type d 2>&1 | head -10
-          find . -name "*.app" -type d 2>&1 | head -10
-          echo "=== DerivedData Contents ==="
-          find ./DerivedData -maxdepth 5 -type d 2>&1 | head -30
-          echo "=== Build Products ==="
-          find ./DerivedData -path "*/Build/Products/*" 2>&1 | head -20
-          APP_PATH=$(find /Users/runner -name "WordBoBo.app" -type d | head -1)
-          if [ -z "$APP_PATH" ]; then
-            APP_PATH=$(find /Users/runner -name "*.app" -type d | head -1)
-          fi
+          find ./DerivedData -name "*.app" -type d 2>&1
+          APP_PATH=$(find ./DerivedData -name "*.app" -type d | head -1)
           echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
           if [ -z "$APP_PATH" ]; then
-            echo "No .app found!"
-            tail -20 /tmp/build.log
+            echo "No .app found! Searching broader:"
+            find /Users/runner -name "*.app" -type d 2>&1 | head -10
+            tail -30 /tmp/build.log
             exit 1
           fi
           echo "Found: $APP_PATH"
