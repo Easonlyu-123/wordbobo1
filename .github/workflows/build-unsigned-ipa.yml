@@ -22,47 +22,58 @@ jobs:
       - name: Generate Xcode project with xcodegen
         run: xcodegen generate
 
-      - name: Build for iOS Simulator
+      - name: Archive (relaxed signing)
         run: |
-          xcodebuild build \
+          xcodebuild archive \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
-            -derivedDataPath ./DerivedData \
+            -destination 'generic/platform=iOS' \
+            -archivePath ./build/WordBoBo.xcarchive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
-            2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: $?"
+            ALLOW_PROVISIONING_UPDATES=YES \
+            2>&1 | tee /tmp/archive.log
+          echo "ARCHIVE EXIT: $?"
+          echo "=== Archive path check ==="
+          ls -la ./build/ 2>&1 || true
+          file ./build/WordBoBo.xcarchive 2>&1 || true
 
-      - name: Find .app in DerivedData
+      - name: Check and export IPA
         run: |
-          find ./DerivedData -name "*.app" -type d 2>&1
-          APP_PATH=$(find ./DerivedData -name "*.app" -type d | head -1)
-          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
-          if [ -z "$APP_PATH" ]; then
-            echo "No .app found! Searching broader:"
-            find /Users/runner -name "*.app" -type d 2>&1 | head -10
-            tail -30 /tmp/build.log
+          if [ -d "./build/WordBoBo.xcarchive" ]; then
+            echo "Archive exists, exporting..."
+            xcodebuild -exportArchive \
+              -archivePath ./build/WordBoBo.xcarchive \
+              -exportPath ./build/output \
+              -exportOptionsPlist ./exportOptions.plist \
+              CODE_SIGNING_ALLOWED=NO \
+              2>&1 | tee /tmp/export.log
+            echo "EXPORT EXIT: $?"
+            ls -la ./build/output/ 2>&1 || true
+          else
+            echo "Archive not found"
+            tail -30 /tmp/archive.log
             exit 1
           fi
-          echo "Found: $APP_PATH"
-          ls -la "$APP_PATH"
 
-      - name: Package IPA
+      - name: Verify IPA
         run: |
-          APP_PATH="${{ env.APP_PATH }}"
-          mkdir -p ~/ipa/Payload
-          cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
-          cd ~/ipa
-          zip -r WordBoBo-unsigned.ipa Payload/
-          ls -lh WordBoBo-unsigned.ipa
+          if [ -f "./build/output/WordBoBo-unsigned.ipa" ]; then
+            echo "IPA found!"
+            ls -lh ./build/output/WordBoBo-unsigned.ipa
+          else
+            echo "No IPA file!"
+            echo "=== Export log ==="
+            cat /tmp/export.log | tail -30
+            exit 1
+          fi
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: WordBoBo-unsigned-ipa
-          path: ~/ipa/WordBoBo-unsigned.ipa
+          path: ./build/output/*.ipa
           retention-days: 30
