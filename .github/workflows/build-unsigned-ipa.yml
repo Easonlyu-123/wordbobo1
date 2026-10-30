@@ -42,41 +42,18 @@ jobs:
           cp WordBoBo/Resources/WordBoBo.entitlements WordBoBo/Resources/
           echo '{"info":{"version":1,"author":"xcode"}}' > WordBoBo/Assets.xcassets/Contents.json
 
-      - name: Remove SceneDelegate (using @main App lifecycle)
-        run: |
-          rm -f WordBoBo/SceneDelegate.swift
+      - name: Remove SceneDelegate
+        run: rm -f WordBoBo/SceneDelegate.swift
 
-      - name: Build and archive for generic iOS device
+      - name: Archive for generic iOS device
         run: |
-          xcodebuild archive \
-            -project WordBoBo.xcodeproj \
-            -scheme WordBoBo \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath ./build/WordBoBo.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ENABLE_CODE_SIGNING=NO
+          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO
 
       - name: Export unsigned IPA
         run: |
-          python3 -c "
-import plistlib
-pl = {
-    'method': 'generic',
-    'signingStyle': 'manual',
-    'compileBitcode': False,
-    'destination': 'export',
-}
-with open('/tmp/exportOptions.plist', 'wb') as f:
-    plistlib.dump(pl, f)
-"
-          xcodebuild -exportArchive \
-            -archivePath ./build/WordBoBo.xcarchive \
-            -exportPath ./build/output \
-            -exportOptionsPlist /tmp/exportOptions.plist \
-            CODE_SIGNING_ALLOWED=NO
+          mkdir -p ./build/output
+          xcodebuild -exportArchive -archivePath ./build/WordBoBo.xcarchive -exportPath ./build/output -exportOptionsPlist ./exportOptions.plist CODE_SIGNING_ALLOWED=NO
+          ls -lh ./build/output/
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
