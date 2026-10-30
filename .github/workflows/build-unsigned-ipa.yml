@@ -61,15 +61,21 @@ jobs:
 
       - name: Export unsigned IPA
         run: |
-          defaults write /tmp/ExportOptions method -string generic
-          defaults write /tmp/ExportOptions signingStyle -string manual
-          defaults write /tmp/ExportOptions compileBitcode -bool false
-          defaults write /tmp/ExportOptions destination -string export
-          plutil -convert xml1 /tmp/ExportOptions
+          python3 -c "
+import plistlib
+pl = {
+    'method': 'generic',
+    'signingStyle': 'manual',
+    'compileBitcode': False,
+    'destination': 'export',
+}
+with open('/tmp/exportOptions.plist', 'wb') as f:
+    plistlib.dump(pl, f)
+"
           xcodebuild -exportArchive \
             -archivePath ./build/WordBoBo.xcarchive \
             -exportPath ./build/output \
-            -exportOptionsPlist /tmp/ExportOptions \
+            -exportOptionsPlist /tmp/exportOptions.plist \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Upload IPA
