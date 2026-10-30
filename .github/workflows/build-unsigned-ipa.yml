@@ -34,13 +34,23 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
             2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT CODE: $?"
 
-      - name: Locate built .app
+      - name: Find and verify built .app
         run: |
-          set -e
+          echo "=== Searching for .app ==="
+          find . -name "*.app" -type d 2>&1 | tee /tmp/app_find.log
+          echo "=== Build dir contents ==="
+          find . -path "*/build/*" -type d 2>&1 | head -20 | tee -a /tmp/app_find.log
           APP_PATH=$(find . -path "*/build/Products/Release-iphoneos/*.app" -type d | head -1)
           echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
-          echo "Found app at: $APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app found!"
+            echo "=== Full build log ==="
+            cat /tmp/build.log | tail -60
+            exit 1
+          fi
+          echo "Found app: $APP_PATH"
           ls -la "$APP_PATH"
 
       - name: Package unsigned IPA
