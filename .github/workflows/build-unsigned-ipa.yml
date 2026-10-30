@@ -22,12 +22,7 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: List available devices
-        run: |
-          xcrun xctrace list devices 2>&1 | tee /tmp/devices.log
-          xcrun simctl list devices available 2>&1 | tee -a /tmp/devices.log
-
-      - name: Archive with physical device destination
+      - name: Archive for device
         run: |
           xcodebuild archive \
             -project WordBoBo.xcodeproj \
@@ -43,49 +38,60 @@ jobs:
             2>&1 | tee /tmp/archive.log
           echo "EXIT: $?"
           ls -la ./build/ 2>&1 || true
-          file ./build/WordBoBo.xcarchive 2>&1 || true
-          echo "=== Archive log tail ==="
-          tail -30 /tmp/archive.log
 
-      - name: Check archive and export
+      - name: Check archive
         run: |
           if [ ! -d "./build/WordBoBo.xcarchive" ]; then
-            echo "Archive not found, trying build+manual packaging..."
-            xcodebuild build \
-              -project WordBoBo.xcodeproj \
-              -scheme WordBoBo \
-              -configuration Release \
-              -destination 'platform=iOS Simulator,name=iPhone 17' \
-              CODE_SIGN_IDENTITY="" \
-              CODE_SIGNING_REQUIRED=NO \
-              CODE_SIGNING_ALLOWED=NO \
-              ENABLE_CODE_SIGNING=NO \
-              2>&1 | tee /tmp/sim_build.log
-            echo "SIM BUILD EXIT: $?"
-            APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
-            if [ -z "$APP" ]; then
-              echo "No .app from simulator either"
-              tail -20 /tmp/sim_build.log
-              exit 1
-            fi
-            echo "Simulator app: $APP"
-            mkdir -p ~/ipa/Payload
-            cp -R "$APP" ~/ipa/Payload/WordBoBo.app
-            cd ~/ipa && zip -r WordBoBo-unsigned.ipa Payload/
-          else
-            echo "Archive found, exporting..."
-            xcodebuild -exportArchive \
-              -archivePath ./build/WordBoBo.xcarchive \
-              -exportPath ./build/output \
-              -exportOptionsPlist ./exportOptions.plist \
-              2>&1 | tee /tmp/export.log
-            echo "EXPORT EXIT: $?"
+            echo "Archive not found:"
+            tail -40 /tmp/archive.log
+            exit 1
           fi
-          ls -lh ~/ipa/WordBoBo-unsigned.ipa 2>&1 || true
+          echo "Archive OK"
+          ls -la ./build/WordBoBo.xcarchive/
+
+      - name: Create export options
+        run: |
+          cat > /tmp/exportOptions.plist << 'PLISTEOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>ad-hoc</string>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>compileBitcode</key>
+    <false/>
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>
+PLISTEOF
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ./build/WordBoBo.xcarchive \
+            -exportPath ./build/output \
+            -exportOptionsPlist /tmp/exportOptions.plist \
+            2>&1 | tee /tmp/export.log
+          echo "EXIT: $?"
+          ls -la ./build/output/ 2>&1 || true
+
+      - name: Verify IPA
+        run: |
+          if [ -f "./build/output/WordBoBo.ipa" ]; then
+            echo "IPA ready!"
+            ls -lh ./build/output/WordBoBo.ipa
+          else
+            echo "No IPA found"
+            tail -30 /tmp/export.log
+            exit 1
+          fi
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: WordBoBo-unsigned-ipa
-          path: ~/ipa/WordBoBo-unsigned.ipa
+          path: ./build/output/*.ipa
           retention-days: 30
