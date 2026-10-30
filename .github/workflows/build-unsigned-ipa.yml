@@ -22,36 +22,41 @@ jobs:
       - name: Generate Xcode project with xcodegen
         run: xcodegen generate
 
-      - name: Show generated project structure
+      - name: Build for generic iOS device
         run: |
-          ls -la WordBoBo.xcodeproj/
-          ls -la WordBoBo/
-          xcodebuild -list -project WordBoBo.xcodeproj 2>&1 | tee /tmp/xcodebuild_list.log
+          xcodebuild build \
+            -project WordBoBo.xcodeproj \
+            -scheme WordBoBo \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_CODE_SIGNING=NO \
+            2>&1 | tee /tmp/build.log
 
-      - name: Archive for generic iOS device
+      - name: Locate built .app
         run: |
-          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/archive.log
+          set -e
+          APP_PATH=$(find . -path "*/build/Products/Release-iphoneos/*.app" -type d | head -1)
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+          echo "Found app at: $APP_PATH"
+          ls -la "$APP_PATH"
 
-      - name: Check archive result and show log on failure
+      - name: Package unsigned IPA
         run: |
-          if [ -d "./build/WordBoBo.xcarchive" ]; then
-            echo "SUCCESS: Archive created"
-            ls -la ./build/WordBoBo.xcarchive/
-          else
-            echo "FAILED: No archive found"
-            echo "=== Archive log ==="
-            cat /tmp/archive.log
-            exit 1
-          fi
-
-      - name: Export unsigned IPA
-        run: |
-          mkdir -p ./build/output
-          xcodebuild -exportArchive -archivePath ./build/WordBoBo.xcarchive -exportPath ./build/output -exportOptionsPlist ./exportOptions.plist CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/export.log
+          set -e
+          APP_PATH="${{ env.APP_PATH }}"
+          mkdir -p ~/ipa/Payload
+          cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
+          rm -f ~/ipa/Payload/WordBoBo.app/embedded.mobileprovision 2>/dev/null || true
+          cd ~/ipa
+          zip -r WordBoBo-unsigned.ipa Payload/
+          ls -lh WordBoBo-unsigned.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: WordBoBo-unsigned-ipa
-          path: ./build/output/*.ipa
+          path: ~/ipa/WordBoBo-unsigned.ipa
           retention-days: 30
