@@ -45,15 +45,28 @@ jobs:
       - name: Remove SceneDelegate
         run: rm -f WordBoBo/SceneDelegate.swift
 
+      - name: Clean build folder
+        run: xcodebuild clean -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' 2>&1 | tee /tmp/xcodebuild.log
+
       - name: Archive for generic iOS device
         run: |
-          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO
+          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/xcodebuild_archive.log
+
+      - name: Check archive result
+        run: |
+          if [ -d "./build/WordBoBo.xcarchive" ]; then
+            echo "Archive succeeded!"
+            ls -la ./build/WordBoBo.xcarchive/
+          else
+            echo "Archive FAILED - showing log:"
+            cat /tmp/xcodebuild_archive.log
+            exit 1
+          fi
 
       - name: Export unsigned IPA
         run: |
           mkdir -p ./build/output
-          xcodebuild -exportArchive -archivePath ./build/WordBoBo.xcarchive -exportPath ./build/output -exportOptionsPlist ./exportOptions.plist CODE_SIGNING_ALLOWED=NO
-          ls -lh ./build/output/
+          xcodebuild -exportArchive -archivePath ./build/WordBoBo.xcarchive -exportPath ./build/output -exportOptionsPlist ./exportOptions.plist CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/xcodebuild_export.log
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
