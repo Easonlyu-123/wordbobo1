@@ -26,21 +26,21 @@
 
 /* Begin PBXFileReference section */
 		10001001 /* WordBoBoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/WordBoBoApp.swift; sourceTree = "<group>"; };
-		10001002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/ContentView.swift; sourceTree = "<group>"; };
-		10001003 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/CameraPreviewView.swift; sourceTree = "<group>"; };
-		10001004 /* WordConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/WordConfirmView.swift; sourceTree = "<group>"; };
-		10001005 /* StudyRouterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyRouterView.swift; sourceTree = "<group>"; };
-		10001006 /* StudyStage1View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyStage1View.swift; sourceTree = "<group>"; };
-		10001007 /* StudyStage2View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyStage2View.swift; sourceTree = "<group>"; };
-		10001008 /* StudyStage3View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyStage3View.swift; sourceTree = "<group>"; };
-		10001009 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/HistoryView.swift; sourceTree = "<group>"; };
-		1000100a /* ManualInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/ManualInputView.swift; sourceTree = "<group>"; };
-		1000100c /* Word.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Word.swift; sourceTree = "<group>"; };
-		1000100d /* WordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/WordStore.swift; sourceTree = "<group>"; };
-		1000100e /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/OCRService.swift; sourceTree = "<group>"; };
+		10001002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/ContentView.swift; sourceTree = "<group>"; };
+		10001003 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/CameraPreviewView.swift; sourceTree = "<group>"; };
+		10001004 /* WordConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/WordConfirmView.swift; sourceTree = "<group>"; };
+		10001005 /* StudyRouterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/StudyRouterView.swift; sourceTree = "<group>"; };
+		10001006 /* StudyStage1View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/StudyStage1View.swift; sourceTree = "<group>"; };
+		10001007 /* StudyStage2View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/StudyStage2View.swift; sourceTree = "<group>"; };
+		10001008 /* StudyStage3View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/StudyStage3View.swift; sourceTree = "<group>"; };
+		10001009 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/HistoryView.swift; sourceTree = "<group>"; };
+		1000100a /* ManualInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Views/ManualInputView.swift; sourceTree = "<group>"; };
+		1000100c /* Word.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Models/Word.swift; sourceTree = "<group>"; };
+		1000100d /* WordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Services/WordStore.swift; sourceTree = "<group>"; };
+		1000100e /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Services/OCRService.swift; sourceTree = "<group>"; };
 		20001001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WordBoBo/Assets.xcassets; sourceTree = "<group>"; };
 		20001002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = WordBoBo/Info.plist; sourceTree = "<group>"; };
-		20001003 /* WordBoBo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WordBoBo/WordBoBo.entitlements; sourceTree = "<group>"; };
+		20001003 /* WordBoBo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WordBoBo/Resources/WordBoBo.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
