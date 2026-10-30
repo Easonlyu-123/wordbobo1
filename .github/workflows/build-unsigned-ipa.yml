@@ -61,26 +61,15 @@ jobs:
 
       - name: Export unsigned IPA
         run: |
-          cat > /tmp/exportOptions.plist << 'PLIST_EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>generic</string>
-    <key>signingStyle</key>
-    <string>manual</string>
-    <key>compileBitcode</key>
-    <false/>
-    <key>destination</key>
-    <string>export</string>
-</dict>
-</plist>
-PLIST_EOF
+          defaults write /tmp/ExportOptions method -string generic
+          defaults write /tmp/ExportOptions signingStyle -string manual
+          defaults write /tmp/ExportOptions compileBitcode -bool false
+          defaults write /tmp/ExportOptions destination -string export
+          plutil -convert xml1 /tmp/ExportOptions
           xcodebuild -exportArchive \
             -archivePath ./build/WordBoBo.xcarchive \
             -exportPath ./build/output \
-            -exportOptionsPlist /tmp/exportOptions.plist \
+            -exportOptionsPlist /tmp/ExportOptions \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Upload IPA
