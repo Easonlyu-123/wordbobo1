@@ -16,9 +16,6 @@ jobs:
         run: brew install xcodegen
       - name: Generate Xcode project
         run: xcodegen generate
-      - name: Show project settings
-        run: |
-          xcodebuild -project WordBoBo.xcodeproj -showBuildSettings -configuration Release 2>&1 | grep -i "sign\|code\|team\|arch" | head -20
       - name: Archive for device
         run: |
           xcodebuild archive \
@@ -43,24 +40,12 @@ jobs:
             tail -50 /tmp/archive.log
             exit 1
           fi
-      - name: Export IPA
+      - name: Create export options and export IPA
         run: |
-          cat > /tmp/exportOptions.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>ad-hoc</string>
-    <key>signingStyle</key>
-    <string>automatic</string>
-    <key>compileBitcode</key>
-    <false/>
-    <key>destination</key>
-    <string>export</string>
-</dict>
-</plist>
-EOF
+          /usr/libexec/PlistBuddy -c "Add :method string ad-hoc" /tmp/exportOptions.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" /tmp/exportOptions.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :compileBitcode bool false" /tmp/exportOptions.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :destination string export" /tmp/exportOptions.plist 2>/dev/null || true
           xcodebuild -exportArchive \
             -archivePath ./build/WordBoBo.xcarchive \
             -exportPath ./build/output \
@@ -68,7 +53,7 @@ EOF
             2>&1 | tee /tmp/export.log
           echo "EXPORT EXIT: $?"
           ls -la ./build/output/ 2>&1 || true
-      - name: Verify and upload
+      - name: Verify and upload IPA
         run: |
           if [ -f "./build/output/WordBoBo.ipa" ]; then
             echo "IPA ready!"
@@ -79,8 +64,7 @@ EOF
             tail -30 /tmp/export.log
             exit 1
           fi
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: WordBoBo-unsigned-ipa
           path: ./build/output/*.ipa
