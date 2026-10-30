@@ -19,16 +19,18 @@ jobs:
       - name: Install xcodegen
         run: brew install xcodegen
 
-      - name: Generate Xcode project with xcodegen
+      - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build for iOS Simulator (produces .app)
+      - name: Build for arm64 iOS
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'platform=iOS Simulator,id=00008101-0014D3C222D8801E' \
+            -sdk iphoneos \
+            -arch arm64 \
+            SYMROOT=build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -36,16 +38,29 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "EXIT: $?"
 
-      - name: Find .app and package IPA
+      - name: Debug build output
         run: |
+          echo "=== build dir ==="
+          find ./build -type f -o -type d 2>&1 | head -30
+          echo "=== DerivedData ==="
+          find ./DerivedData -type f -name "*.app" 2>&1 | head -5
+          echo "=== All .app on system ==="
+          find /Users/runner -name "*.app" -type d 2>&1 | head -10
+          echo "=== Build log tail ==="
+          tail -30 /tmp/build.log
+
+      - name: Package IPA
+        run: |
+          set -e
           APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
           if [ -z "$APP" ]; then
-            echo "WordBoBo.app not found, searching all .app:"
-            find /Users/runner -name "*.app" -type d 2>/dev/null | head -10
-            tail -20 /tmp/build.log
+            APP=$(find /Users/runner -name "*.app" -type d 2>/dev/null | head -1)
+          fi
+          if [ -z "$APP" ]; then
+            echo "No .app found"
             exit 1
           fi
-          echo "Found: $APP"
+          echo "Packaging: $APP"
           mkdir -p ~/ipa/Payload
           cp -R "$APP" ~/ipa/Payload/WordBoBo.app
           cd ~/ipa && zip -r WordBoBo-unsigned.ipa Payload/
