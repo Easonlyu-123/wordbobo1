@@ -12,62 +12,65 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "26.6"
-      - name: Verify xcodeproj
+      - name: Build for device (arm64)
         run: |
-          ls -la WordBoBo.xcodeproj/
-          test -f WordBoBo.xcodeproj/project.pbxproj && echo "pbxproj OK" || exit 1
-          xcodebuild -project WordBoBo.xcodeproj -list 2>&1 | head -10
-      - name: Archive for device
-        run: |
-          xcodebuild archive \
+          xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath ./build/WordBoBo.xcarchive \
-            -allowProvisioningUpdates \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            2>&1 | tee /tmp/archive.log
-          echo "ARCHIVE EXIT: $?"
-          ls -la ./build/ 2>&1 || true
-          if [ -d "./build/WordBoBo.xcarchive" ]; then
-            echo "ARCHIVE FOUND!"
-            ls -la ./build/WordBoBo.xcarchive/
-          fi
-      - name: Check archive result
+            -sdk iphoneos \
+            -arch arm64 \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_CODE_SIGNING=NO \
+            SYMROOT=./build \
+            2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT: $?"
+      - name: Find built binary
         run: |
-          if [ ! -d "./build/WordBoBo.xcarchive" ]; then
-            echo "Archive not found. Log:"
-            tail -60 /tmp/archive.log
+          echo "=== Build dir ==="
+          find ./build -type f 2>/dev/null | head -30
+          echo "=== Derived data ==="
+          find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo" -type f 2>/dev/null | head -5
+          echo "=== Any binary ==="
+          find . -name "WordBoBo" -type f 2>/dev/null | head -5
+          find ~/Library/Developer/Xcode/DerivedData -path "*/Build/Products/Release-iphoneos/*" 2>/dev/null | head -10
+      - name: Package IPA
+        run: |
+          BINARY=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/Products/Release-iphoneos/WordBoBo" -type f | head -1)
+          if [ -z "$BINARY" ]; then
+            BINARY=$(find . -name "WordBoBo" -type f | head -1)
+          fi
+          echo "Binary: $BINARY"
+          if [ -z "$BINARY" ]; then
+            echo "No binary found!"
+            tail -40 /tmp/build.log
             exit 1
           fi
-      - name: Export IPA
-        run: |
-          python3 -c "
-import plistlib
-pl = dict(method='ad-hoc', signingStyle='automatic', compileBitcode=False)
-with open('/tmp/exportOptions.plist','wb') as f: plistlib.dump(pl, f)
-print('exportOptions.plist created')
-"
-          xcodebuild -exportArchive \
-            -archivePath ./build/WordBoBo.xcarchive \
-            -exportPath ./build/output \
-            -exportOptionsPlist /tmp/exportOptions.plist \
-            2>&1 | tee /tmp/export.log
-          echo "EXPORT EXIT: $?"
-          ls -la ./build/output/ 2>&1 || true
-      - name: Verify and upload IPA
-        run: |
-          if [ -f "./build/output/WordBoBo.ipa" ]; then
-            echo "IPA ready!"
-            ls -lh ./build/output/WordBoBo.ipa
-          else
-            echo "No IPA found"
-            tail -30 /tmp/export.log
-            exit 1
-          fi
+          echo "Arch:"
+          file "$BINARY"
+          lipo -info "$BINARY"
+          # Build .app structure
+          APP_DIR=./build/WordBoBo.app
+          mkdir -p "$APP_DIR"
+          cp "$BINARY" "$APP_DIR/WordBoBo"
+          cp WordBoBo/Info.plist "$APP_DIR/"
+          mkdir -p "$APP_DIR/_CodeSignature"
+          touch "$APP_DIR/_CodeSignature/CodeResources"
+          mkdir -p "$APP_DIR/PlugIns"
+          cp -r WordBoBo/Resources "$APP_DIR/" 2>/dev/null || true
+          cp -r WordBoBo/Assets.xcassets "$APP_DIR/" 2>/dev/null || true
+          # Package IPA
+          mkdir -p ./build/Payload
+          cp -R "$APP_DIR" ./build/Payload/
+          cd ./build
+          zip -r WordBoBo-unsigned.ipa Payload/
+          cd ..
+          echo "=== IPA ==="
+          ls -lh ./build/WordBoBo-unsigned.ipa
+          unzip -l ./build/WordBoBo-unsigned.ipa | head -10
       - uses: actions/upload-artifact@v4
         with:
           name: WordBoBo-unsigned-ipa
-          path: ./build/output/*.ipa
+          path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
