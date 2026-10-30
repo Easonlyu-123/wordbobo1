@@ -25,6 +25,10 @@ settings:
     CODE_SIGNING_REQUIRED: NO
     CODE_SIGNING_ALLOWED: NO
     ENABLE_CODE_SIGNING: NO
+    BUILD_DIR: \${PROJECT_DIR}/build
+    BUILD_ROOT: \${PROJECT_DIR}/build
+    OBJROOT: \${PROJECT_DIR}/build
+    SYMROOT: \${PROJECT_DIR}/build
   debug:
     SWIFT_OPTIMIZATION_LEVEL: "-Onone"
   release:
