@@ -15,8 +15,8 @@ jobs:
       - name: Verify xcodeproj
         run: |
           ls -la WordBoBo.xcodeproj/
-          ls -la WordBoBo.xcodeproj/project.pbxproj
-          xcodebuild -project WordBoBo.xcodeproj -list 2>&1 | head -20
+          test -f WordBoBo.xcodeproj/project.pbxproj && echo "pbxproj OK" || exit 1
+          xcodebuild -project WordBoBo.xcodeproj -list 2>&1 | head -10
       - name: Archive for device
         run: |
           xcodebuild archive \
@@ -43,20 +43,12 @@ jobs:
           fi
       - name: Export IPA
         run: |
-          cat > /tmp/exportOptions.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>ad-hoc</string>
-    <key>signingStyle</key>
-    <string>automatic</string>
-    <key>compileBitcode</key>
-    <false/>
-</dict>
-</plist>
-EOF
+          python3 -c "
+import plistlib
+pl = dict(method='ad-hoc', signingStyle='automatic', compileBitcode=False)
+with open('/tmp/exportOptions.plist','wb') as f: plistlib.dump(pl, f)
+print('exportOptions.plist created')
+"
           xcodebuild -exportArchive \
             -archivePath ./build/WordBoBo.xcarchive \
             -exportPath ./build/output \
