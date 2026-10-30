@@ -42,31 +42,26 @@ jobs:
           cp WordBoBo/Resources/WordBoBo.entitlements WordBoBo/Resources/
           echo '{"info":{"version":1,"author":"xcode"}}' > WordBoBo/Assets.xcassets/Contents.json
 
-      - name: Remove SceneDelegate
-        run: rm -f WordBoBo/SceneDelegate.swift
-
-      - name: Clean build folder
-        run: xcodebuild clean -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' 2>&1 | tee /tmp/xcodebuild.log
+      - name: Clean build
+        run: xcodebuild clean -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS'
 
       - name: Archive for generic iOS device
         run: |
-          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/xcodebuild_archive.log
+          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/archive.log
 
-      - name: Check archive result
+      - name: Check archive
         run: |
-          if [ -d "./build/WordBoBo.xcarchive" ]; then
-            echo "Archive succeeded!"
-            ls -la ./build/WordBoBo.xcarchive/
-          else
-            echo "Archive FAILED - showing log:"
-            cat /tmp/xcodebuild_archive.log
+          if [ ! -d "./build/WordBoBo.xcarchive" ]; then
+            echo "Archive FAILED"
+            cat /tmp/archive.log | tail -30
             exit 1
           fi
+          echo "Archive OK"
 
       - name: Export unsigned IPA
         run: |
           mkdir -p ./build/output
-          xcodebuild -exportArchive -archivePath ./build/WordBoBo.xcarchive -exportPath ./build/output -exportOptionsPlist ./exportOptions.plist CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/xcodebuild_export.log
+          xcodebuild -exportArchive -archivePath ./build/WordBoBo.xcarchive -exportPath ./build/output -exportOptionsPlist ./exportOptions.plist CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/export.log
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
