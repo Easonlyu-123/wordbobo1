@@ -22,6 +22,10 @@ jobs:
       - name: Generate Xcode project with xcodegen
         run: xcodegen generate
 
+      - name: Show project info
+        run: |
+          xcodebuild -list -project WordBoBo.xcodeproj 2>&1 | tee /tmp/xcodebuild_list.log
+
       - name: Build for generic iOS device
         run: |
           xcodebuild build \
@@ -34,35 +38,57 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
             2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT CODE: $?"
+          echo "BUILD EXIT: $?"
 
-      - name: Find and verify built .app
+      - name: Debug build output location
         run: |
-          echo "=== Searching for .app ==="
-          find . -name "*.app" -type d 2>&1 | tee /tmp/app_find.log
-          echo "=== Build dir contents ==="
-          find . -path "*/build/*" -type d 2>&1 | head -20 | tee -a /tmp/app_find.log
-          APP_PATH=$(find . -path "*/build/Products/Release-iphoneos/*.app" -type d | head -1)
-          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+          echo "=== All .app directories ==="
+          find . -name "*.app" -type d 2>&1 | tee /tmp/app_search.log
+          echo "=== All build directories ==="
+          find . -type d -name "build" 2>&1 | tee -a /tmp/app_search.log
+          echo "=== DerivedData ==="
+          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>&1 | head -10 | tee -a /tmp/app_search.log
+          echo "=== Products dirs ==="
+          find . -type d -name "Products" 2>&1 | head -10 | tee -a /tmp/app_search.log
+          cat /tmp/app_search.log
+
+      - name: Package IPA from found .app
+        run: |
+          APP_PATH=$(find . -name "*.app" -type d | head -1)
           if [ -z "$APP_PATH" ]; then
-            echo "ERROR: No .app found!"
-            echo "=== Full build log ==="
-            cat /tmp/build.log | tail -60
+            echo "No .app found, trying archive approach..."
+            xcodebuild archive \
+              -project WordBoBo.xcodeproj \
+              -scheme WordBoBo \
+              -configuration Release \
+              -destination 'generic/platform=iOS' \
+              -archivePath ./build/WordBoBo.xcarchive \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO \
+              ENABLE_CODE_SIGNING=NO \
+              2>&1 | tee /tmp/archive2.log
+            echo "ARCHIVE EXIT: $?"
+            ls -la ./build/ 2>/dev/null || true
+            find . -name "*.xcarchive" -type d 2>/dev/null | head -5
+          else
+            echo "Found app: $APP_PATH"
+            mkdir -p ~/ipa/Payload
+            cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
+            cd ~/ipa
+            zip -r WordBoBo-unsigned.ipa Payload/
+            ls -lh WordBoBo-unsigned.ipa
+          fi
+
+      - name: Upload IPA if exists
+        if: always()
+        run: |
+          if [ -f ~/ipa/WordBoBo-unsigned.ipa ]; then
+            echo "IPA found, will upload"
+          else
+            echo "No IPA produced"
             exit 1
           fi
-          echo "Found app: $APP_PATH"
-          ls -la "$APP_PATH"
-
-      - name: Package unsigned IPA
-        run: |
-          set -e
-          APP_PATH="${{ env.APP_PATH }}"
-          mkdir -p ~/ipa/Payload
-          cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
-          rm -f ~/ipa/Payload/WordBoBo.app/embedded.mobileprovision 2>/dev/null || true
-          cd ~/ipa
-          zip -r WordBoBo-unsigned.ipa Payload/
-          ls -lh WordBoBo-unsigned.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
