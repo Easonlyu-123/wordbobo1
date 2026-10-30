@@ -24,7 +24,12 @@ jobs:
 
       - name: Copy sources into project
         run: |
-          mkdir -p WordBoBo/Resources WordBoBo/Assets.xcassets
+          set -eux
+          mkdir -p WordBoBo/Resources WordBoBo/Assets.xcassets WordBoBo/Views WordBoBo/Models WordBoBo/Services
+          ls -la WordBoBo/
+          ls -la WordBoBo/Views/
+          ls -la WordBoBo/Services/
+          ls -la WordBoBo/Models/
           cp WordBoBo/WordBoBoApp.swift WordBoBo/
           cp WordBoBo/Views/ContentView.swift WordBoBo/
           cp WordBoBo/Views/CameraPreviewView.swift WordBoBo/
@@ -41,6 +46,8 @@ jobs:
           cp WordBoBo/Info.plist WordBoBo/
           cp WordBoBo/Resources/WordBoBo.entitlements WordBoBo/Resources/
           echo '{"info":{"version":1,"author":"xcode"}}' > WordBoBo/Assets.xcassets/Contents.json
+          echo "All files copied successfully"
+          ls -la WordBoBo/
 
       - name: Clean build
         run: xcodebuild clean -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS'
@@ -53,7 +60,7 @@ jobs:
         run: |
           if [ ! -d "./build/WordBoBo.xcarchive" ]; then
             echo "Archive FAILED"
-            cat /tmp/archive.log | tail -30
+            cat /tmp/archive.log | tail -40
             exit 1
           fi
           echo "Archive OK"
