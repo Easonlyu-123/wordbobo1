@@ -22,15 +22,25 @@ jobs:
       - name: Generate Xcode project with xcodegen
         run: xcodegen generate
 
-      - name: Clean and Archive
+      - name: Show generated project structure
         run: |
-          xcodebuild clean archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/archive.log
+          ls -la WordBoBo.xcodeproj/
+          ls -la WordBoBo/
+          xcodebuild -list -project WordBoBo.xcodeproj 2>&1 | tee /tmp/xcodebuild_list.log
 
-      - name: Check archive
+      - name: Archive for generic iOS device
         run: |
-          if [ ! -d "./build/WordBoBo.xcarchive" ]; then
-            echo "Archive FAILED"
-            tail -50 /tmp/archive.log
+          xcodebuild archive -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -destination 'generic/platform=iOS' -archivePath ./build/WordBoBo.xcarchive CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_CODE_SIGNING=NO 2>&1 | tee /tmp/archive.log
+
+      - name: Check archive result and show log on failure
+        run: |
+          if [ -d "./build/WordBoBo.xcarchive" ]; then
+            echo "SUCCESS: Archive created"
+            ls -la ./build/WordBoBo.xcarchive/
+          else
+            echo "FAILED: No archive found"
+            echo "=== Archive log ==="
+            cat /tmp/archive.log
             exit 1
           fi
 
