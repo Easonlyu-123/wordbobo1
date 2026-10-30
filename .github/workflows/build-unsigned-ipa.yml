@@ -35,7 +35,6 @@ jobs:
           cp WordBoBo/Views/StudyStage3View.swift WordBoBo/
           cp WordBoBo/Views/HistoryView.swift WordBoBo/
           cp WordBoBo/Views/ManualInputView.swift WordBoBo/
-          cp WordBoBo/SceneDelegate.swift WordBoBo/
           cp WordBoBo/Models/Word.swift WordBoBo/
           cp WordBoBo/Services/WordStore.swift WordBoBo/
           cp WordBoBo/Services/OCRService.swift WordBoBo/
@@ -43,39 +42,50 @@ jobs:
           cp WordBoBo/Resources/WordBoBo.entitlements WordBoBo/Resources/
           echo '{"info":{"version":1,"author":"xcode"}}' > WordBoBo/Assets.xcassets/Contents.json
 
-      - name: Build for generic iOS device (no signing)
+      - name: Remove SceneDelegate (using @main App lifecycle)
         run: |
-          xcodebuild build \
+          rm -f WordBoBo/SceneDelegate.swift
+
+      - name: Build and archive for generic iOS device
+        run: |
+          xcodebuild archive \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
             -destination 'generic/platform=iOS' \
+            -archivePath ./build/WordBoBo.xcarchive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO
 
-      - name: Locate built .app
+      - name: Export unsigned IPA
         run: |
-          set -e
-          APP_PATH=$(find . -path "*/build/Products/Release-iphoneos/*.app" -type d | head -1)
-          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
-          ls -la "$APP_PATH"
-
-      - name: Package unsigned IPA
-        run: |
-          set -e
-          APP_PATH="${{ env.APP_PATH }}"
-          mkdir -p ~/ipa/Payload
-          cp -R "$APP_PATH" ~/ipa/Payload/WordBoBo.app
-          rm -f ~/ipa/Payload/WordBoBo.app/embedded.mobileprovision 2>/dev/null || true
-          cd ~/ipa
-          zip -r WordBoBo-unsigned.ipa Payload/
-          ls -lh WordBoBo-unsigned.ipa
+          cat > /tmp/exportOptions.plist << 'PLIST_EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>generic</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>compileBitcode</key>
+    <false/>
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>
+PLIST_EOF
+          xcodebuild -exportArchive \
+            -archivePath ./build/WordBoBo.xcarchive \
+            -exportPath ./build/output \
+            -exportOptionsPlist /tmp/exportOptions.plist \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: WordBoBo-unsigned-ipa
-          path: ~/ipa/WordBoBo-unsigned.ipa
+          path: ./build/output/*.ipa
           retention-days: 30
