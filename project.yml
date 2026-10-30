@@ -4,7 +4,7 @@ options:
   deploymentTarget:
     iOS: "17.0"
   developmentLanguage: zh-Hans
-  xcodeVersion: "15.0"
+  xcodeVersion: "26.0"
 
 configs:
   Debug: debug
@@ -25,10 +25,8 @@ settings:
     CODE_SIGNING_REQUIRED: NO
     CODE_SIGNING_ALLOWED: NO
     ENABLE_CODE_SIGNING: NO
-    BUILD_DIR: \${PROJECT_DIR}/build
-    BUILD_ROOT: \${PROJECT_DIR}/build
-    OBJROOT: \${PROJECT_DIR}/build
-    SYMROOT: \${PROJECT_DIR}/build
+    BUILD_DIR: build
+    SYMROOT: build
   debug:
     SWIFT_OPTIMIZATION_LEVEL: "-Onone"
   release:
