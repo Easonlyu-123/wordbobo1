@@ -3,72 +3,53 @@ options:
   bundleIdPrefix: com.wordbobo
   deploymentTarget:
     iOS: "17.0"
-  xcodeVersion: "26.6"
-
-settings:
-  base:
-    SWIFT_VERSION: "5.9"
-    MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: 1
+  developmentLanguage: zh-Hans
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
 
 configs:
   Debug: debug
   Release: release
 
-schemes:
-  WordBoBo:
-    buildTargets:
-      - WordBoBo
-    testTargets:
-      - WordBoBoTests
-    run:
-      config: Release
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.wordbobo.app
+    PRODUCT_NAME: WordBoBo
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    SWIFT_VERSION: "5.9"
+    INFOPLIST_KEY_CFBundleDisplayName: 单词背背
+    INFOPLIST_KEY_UIRequiresFullScreen: YES
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGNING_ALLOWED: NO
+    ENABLE_CODE_SIGNING: NO
+  debug:
+    SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+  release:
+    SWIFT_OPTIMIZATION_LEVEL: "-O"
+    GCC_OPTIMIZATION_LEVEL: s
 
 targets:
   WordBoBo:
     type: application
     platform: iOS
-    sources: [WordBoBo]
-    resources: [WordBoBo/Resources]
-    entitlements:
-      path: WordBoBo/Resources/WordBoBo.entitlements
-      properties:
-        com.apple.developer.visionkit.readerdocumentdocumenttypes: true
-        com.apple.developer.avfoundation.audio-input: true
-        com.apple.developer.speech.recognition: true
+    deploymentTarget: "17.0"
+    sources:
+      - path: WordBoBo
+        excludes:
+          - "SceneDelegate.swift"
+    resources:
+      - path: WordBoBo/Resources
+      - path: WordBoBo/Assets.xcassets
     info:
       path: WordBoBo/Info.plist
       properties:
-        NSCameraUsageDescription: "需要相机权限来拍照识别单词"
-        NSPhotoLibraryUsageDescription: "需要相册权限来选择照片识别单词"
-        NSSpeechRecognitionUsageDescription: "需要语音权限来朗读单词发音"
-        NSMicrophoneUsageDescription: "需要麦克风权限来朗读单词发音"
-        CFBundleDisplayName: "单词背背"
-        CFBundleName: "WordBoBo"
-        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        CFBundleShortVersionString: "$(MARKETING_VERSION)"
-        UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: false
-          UISceneConfigurations:
-            ApplicationSessionRole:
-              - UISceneConfigurationName: Default Configuration
-                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
-                UISceneStoryboardFile: Main
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.wordbobo.app
-        DEVELOPMENT_TEAM: ""
-        CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
-        ENABLE_PREVIEWS: YES
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR: AccentColor
-        SWIFT_EMIT_LOC_STRINGS: YES
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: SWIFT_PM
-
-  WordBoBoTests:
-    type: bundle.unit-test
-    platform: iOS
-    sources: [Tests]
-    dependencies:
-      - target: WordBoBo
+        UIApplicationSceneManifest: false
+    entitlements:
+      path: WordBoBo/Resources/WordBoBo.entitlements
+    scheme:
+      gatherCoverageData: true
+      testTargets: []
