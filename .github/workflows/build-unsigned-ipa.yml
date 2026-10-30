@@ -22,53 +22,58 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build for arm64 iOS
+      - name: Ad-hoc build and archive
         run: |
-          xcodebuild build \
+          xcodebuild archive \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -sdk iphoneos \
-            -arch arm64 \
-            SYMROOT=build \
+            -destination 'generic/platform=iOS' \
+            -archivePath ./build/WordBoBo.xcarchive \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ENABLE_CODE_SIGNING=NO \
-            2>&1 | tee /tmp/build.log
+            CODE_SIGNING_ALLOWED=YES \
+            ENABLE_CODE_SIGNING=YES \
+            2>&1 | tee /tmp/archive.log
           echo "EXIT: $?"
+          ls -la ./build/ 2>&1 || true
 
-      - name: Debug build output
+      - name: Check archive
         run: |
-          echo "=== build dir ==="
-          find ./build -type f -o -type d 2>&1 | head -30
-          echo "=== DerivedData ==="
-          find ./DerivedData -type f -name "*.app" 2>&1 | head -5
-          echo "=== All .app on system ==="
-          find /Users/runner -name "*.app" -type d 2>&1 | head -10
-          echo "=== Build log tail ==="
-          tail -30 /tmp/build.log
-
-      - name: Package IPA
-        run: |
-          set -e
-          APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
-          if [ -z "$APP" ]; then
-            APP=$(find /Users/runner -name "*.app" -type d 2>/dev/null | head -1)
-          fi
-          if [ -z "$APP" ]; then
-            echo "No .app found"
+          if [ -d "./build/WordBoBo.xcarchive" ]; then
+            echo "Archive OK"
+            ls -la ./build/WordBoBo.xcarchive/
+          else
+            echo "No archive"
+            tail -40 /tmp/archive.log
             exit 1
           fi
-          echo "Packaging: $APP"
-          mkdir -p ~/ipa/Payload
-          cp -R "$APP" ~/ipa/Payload/WordBoBo.app
-          cd ~/ipa && zip -r WordBoBo-unsigned.ipa Payload/
-          ls -lh ~/ipa/WordBoBo-unsigned.ipa
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ./build/WordBoBo.xcarchive \
+            -exportPath ./build/output \
+            -exportOptionsPlist ./exportOptions.plist \
+            2>&1 | tee /tmp/export.log
+          echo "EXIT: $?"
+          ls -la ./build/output/ 2>&1 || true
+
+      - name: Verify IPA
+        run: |
+          if [ -f "./build/output/WordBoBo-unsigned.ipa" ]; then
+            echo "IPA ready!"
+            ls -lh ./build/output/WordBoBo-unsigned.ipa
+          else
+            echo "No IPA"
+            tail -30 /tmp/export.log
+            exit 1
+          fi
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: WordBoBo-unsigned-ipa
-          path: ~/ipa/WordBoBo-unsigned.ipa
+          path: ./build/output/*.ipa
           retention-days: 30
