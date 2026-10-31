@@ -49,8 +49,13 @@
 
 /* Begin PBXGroup section */
 		30000002 = {isa = PBXGroup; children = (30000003 /* WordBoBo */, 30000004 /* Products */); sourceTree = "<group>"; };
+		30000003 /* WordBoBo */ = {isa = PBXGroup; children = (3000000f /* Views */, 30000010 /* Models */, 30000011 /* Services */, 30000012 /* Resources */, 10001001 /* WordBoBoApp.swift */); path = WordBoBo; sourceTree = "<group>"; };
 		30000004 /* Products */ = {isa = PBXGroup; children = (30000005 /* WordBoBo.app */); path = Products; sourceTree = "<group>"; };
 		30000005 /* WordBoBo.app */ = {isa = PBXGroup; children = (); path = WordBoBo.app; sourceTree = "<group>"; };
+		3000000f /* Views */ = {isa = PBXGroup; children = (10001002 /* ContentView.swift */, 10001003 /* CameraPreviewView.swift */, 10001004 /* WordConfirmView.swift */, 10001005 /* StudyRouterView.swift */, 10001006 /* StudyStage1View.swift */, 10001007 /* StudyStage2View.swift */, 10001008 /* StudyStage3View.swift */, 10001009 /* HistoryView.swift */, 1000100a /* ManualInputView.swift */); path = Views; sourceTree = "<group>"; };
+		30000010 /* Models */ = {isa = PBXGroup; children = (1000100c /* Word.swift */); path = Models; sourceTree = "<group>"; };
+		30000011 /* Services */ = {isa = PBXGroup; children = (1000100d /* WordStore.swift */, 1000100e /* OCRService.swift */); path = Services; sourceTree = "<group>"; };
+		30000012 /* Resources */ = {isa = PBXGroup; children = (20001001 /* Assets.xcassets */, 20001002 /* Info.plist */, 20001003 /* WordBoBo.entitlements */); path = Resources; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -89,7 +94,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		30000007 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (10000001, 10000002, 10000003, 10000004, 10000005, 10000006, 10000007, 10000008, 10000009, 1000000a, 1000000b, 1000000c, 1000000d, 1000000e); runOnlyForDeploymentPostprocessing = 0; };
+		30000007 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (10000001, 10000002, 10000003, 10000004, 10000005, 10000006, 10000007, 10000008, 10000009, 1000000a, 1000000c, 1000000d, 1000000e); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
