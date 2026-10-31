@@ -13,24 +13,7 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Fix pbxproj - set DEVELOPMENT_TEAM and add SKIP_INSTALL=NO
-        run: |
-          python3 << 'PY'
-          with open('WordBoBo.xcodeproj/project.pbxproj', 'r') as f:
-              content = f.read()
-          # Set a valid development team for simulator builds
-          content = content.replace('DEVELOPMENT_TEAM = "";', 'DEVELOPMENT_TEAM = 9J9BX9XZXZ;')
-          # Add SKIP_INSTALL=NO to target configs to ensure .app is built
-          content = content.replace(
-              'CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1;',
-              'CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; SKIP_INSTALL = NO;'
-          )
-          with open('WordBoBo.xcodeproj/project.pbxproj', 'w') as f:
-              f.write(content)
-          print("pbxproj patched")
-          PY
-
-      - name: Build for simulator (with signing)
+      - name: Build for simulator with derivedDataPath
         run: |
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           xcrun simctl boot "$SIM" 2>&1 || true
@@ -42,40 +25,41 @@ jobs:
             -configuration Release \
             -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$SIM" \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=9J9BX9XZXZ \
+            -derivedDataPath ./DerivedData \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app and package IPA
+      - name: Find .app in derived data and package IPA
         if: success()
         run: |
-          echo "=== Build log - last 30 lines ==="
-          tail -30 /tmp/build.log
-          echo "=== DerivedData Build/Products ==="
-          find ~/Library/Developer/Xcode/DerivedData -path "*/Build/Products/*" -type d 2>/dev/null | head -20
-          echo "=== All .app ==="
-          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          echo "=== DerivedData tree ==="
+          find ./DerivedData -maxdepth 6 -type d 2>/dev/null | head -40
+          echo "=== All .app in DerivedData ==="
+          find ./DerivedData -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== Build log grep ==="
+          grep -i "TARGET_BUILD_DIR\|BUILT_PRODUCTS_DIR\|PRODUCT_NAME\|built\|error:" /tmp/build.log | tail -30
           
-          APP=$(find /Users/runner -name "WordBoBo.app" -type d | head -1)
+          # Look in multiple places
+          APP=$(find ./DerivedData -name "WordBoBo.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            APP=$(find /Users/runner/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -1)
+          fi
           echo "APP: $APP"
           
-          if [ -z "$APP" ]; then
-            echo "NO APP"
+          if [ -n "$APP" ]; then
+            mkdir -p ./build/Payload
+            cp -R "$APP" ./build/Payload/
+            cd ./build
+            zip -r WordBoBo-unsigned.ipa Payload/
+            cd ..
+            ls -lh ./build/WordBoBo-unsigned.ipa
+          else
+            echo "NO APP FOUND"
             exit 1
           fi
-          
-          # Strip signatures
-          rm -rf "$APP/_CodeSignature" 2>/dev/null || true
-          rm -f "$APP/embedded.mobileprovision" 2>/dev/null || true
-          
-          # Package IPA
-          mkdir -p ./build/Payload
-          cp -R "$APP" ./build/Payload/
-          cd ./build
-          zip -r WordBoBo-unsigned.ipa Payload/
-          cd ..
-          ls -lh ./build/WordBoBo-unsigned.ipa
 
       - uses: actions/upload-artifact@v4
         if: success()
@@ -87,7 +71,6 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          tail -60 /tmp/build.log
+          cat /tmp/build.log | tail -60
           echo "=== All .app ==="
           find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
