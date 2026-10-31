@@ -13,7 +13,7 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build, find, and package IPA
+      - name: Build .app for simulator
         run: |
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           xcrun simctl boot "$SIM" 2>&1 || true
@@ -23,20 +23,23 @@ jobs:
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$SIM" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo "Build failed"
-            tail -40 /tmp/build.log
-            exit 1
-          fi
-
-          APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
+      - name: Find .app and package IPA
+        if: success()
+        run: |
+          echo "=== Build log - last 20 lines ==="
+          tail -20 /tmp/build.log
+          echo "=== Search .app in project dir ==="
+          find . -maxdepth 8 -name "WordBoBo.app" -type d 2>/dev/null
+          echo "=== Search DerivedData ==="
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 5 -name "WordBoBo.app" -type d 2>/dev/null
+          
+          APP=$(find . -maxdepth 8 -name "WordBoBo.app" -type d 2>/dev/null | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
@@ -47,7 +50,6 @@ jobs:
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
             echo "NO APP FOUND"
-            tail -40 /tmp/build.log
             exit 1
           fi
 
@@ -61,5 +63,7 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
+          echo "=== BUILD LOG ==="
           cat /tmp/build.log
+          echo "=== ALL .APP ==="
           find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
