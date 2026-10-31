@@ -17,19 +17,14 @@ jobs:
         run: |
           echo "=== Files ==="
           ls -la
-          echo "=== xcodeproj contents ==="
+          echo "=== xcodeproj ==="
           ls -la WordBoBo.xcodeproj/
-          test -f WordBoBo.xcodeproj/project.pbxproj && echo "pbxproj exists" || exit 1
           echo "=== Source files ==="
           ls -la WordBoBo/
-          echo "=== Scheme location ==="
-          ls -la WordBoBo.xcodeproj/xcshareddata/xcschemes/ 2>&1
-          echo "=== xcodebuild -list (verbose) ==="
-          xcodebuild -project WordBoBo.xcodeproj -list 2>&1 || echo "xcodebuild -list FAILED with code $?"
-          echo "=== xcodebuild -list with scheme ==="
-          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -showBuildSettings 2>&1 | head -30 || echo "showBuildSettings FAILED with code $?"
+          echo "=== xcodebuild -list ==="
+          xcodebuild -project WordBoBo.xcodeproj -list 2>&1
 
-      - name: Build .app
+      - name: Build .app (no signing)
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
@@ -49,15 +44,18 @@ jobs:
           echo "=== Build log (last 60 lines) ==="
           tail -60 /tmp/build.log
 
-      - name: Package IPA from .app
+      - name: Locate .app
         run: |
-          echo "=== Search for .app ==="
-          find ./build -name "*.app" -type d 2>/dev/null
+          echo "=== SYMROOT ./build contents ==="
+          find ./build -type f -o -type d 2>/dev/null | head -30
+          echo "=== DerivedData search ==="
           find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -5
-          APP=$(find ./build -name "*.app" -type d | head -1)
-          if [ -z "$APP" ]; then
-            APP=$(find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d | head -1)
-          fi
+          echo "=== Any .app anywhere ==="
+          find . -name "*.app" -type d 2>/dev/null | head -10
+
+      - name: Package IPA
+        run: |
+          APP=$(find . -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
@@ -68,9 +66,8 @@ jobs:
             echo "IPA:"
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP FOUND - build may have failed"
-            echo "=== All build outputs ==="
-            find ./build -type f 2>/dev/null | head -20
+            echo "NO APP FOUND"
+            exit 1
           fi
 
       - uses: actions/upload-artifact@v4
