@@ -50,7 +50,7 @@
 /* Begin PBXGroup section */
 		30000002 = {isa = PBXGroup; children = (30000003 /* WordBoBo */, 30000004 /* Products */); sourceTree = "<group>"; };
 		30000004 /* Products */ = {isa = PBXGroup; children = (30000005 /* WordBoBo.app */); path = Products; sourceTree = "<group>"; };
-		30000005 /* WordBoBo.app */ = {isa = PBXGroup; children = (); path = WordBoBo.app; sourceTree = "<group>"; };
+		30000005 /* WordBoBo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = WordBoBo.app; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
