@@ -13,38 +13,44 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app and save diagnostics
+      - name: List available simulators
         run: |
-          xcodebuild build \
+          xcrun simctl list devices available 2>&1
+
+      - name: Build .app for iOS Simulator
+        run: |
+          xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'platform=iOS Simulator,OS=17.2,name=iPhone 15' \
+            -destination 'platform=iOS Simulator,OS=17.2' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
+            BUILD_DIR=./build/Products \
+            BUILD_ROOT=./build \
+            OBJROOT=./build/obj \
+            SYMROOT=./build \
             2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: $?"
+          echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-          # Save ALL diagnostic info
-          echo "=== Find .app everywhere ===" > /tmp/diag.log
-          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null >> /tmp/diag.log
-          echo "=== DerivedData .app ===" >> /tmp/diag.log
-          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>/dev/null >> /tmp/diag.log
-          echo "=== Build dir ===" >> /tmp/diag.log
-          find ./build -type d 2>/dev/null >> /tmp/diag.log
-          echo "=== Log grep .app ===" >> /tmp/diag.log
-          grep -i "\\.app" /tmp/build.log >> /tmp/diag.log
-          echo "=== DONE ===" >> /tmp/diag.log
-          cat /tmp/diag.log
+      - name: Find .app in known locations
+        run: |
+          echo "=== Build/Products ==="
+          ls -la ./build/Products/ 2>/dev/null || echo "No Products dir"
+          find ./build -name "*.app" -type d 2>/dev/null
+          echo "=== DerivedData ==="
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 5 -name "WordBoBo.app" -type d 2>/dev/null
+          echo "=== Log: last built product ==="
+          grep -i "built.*product\|target.*output\|writing.*objects" /tmp/build.log | tail -10
 
       - name: Package IPA
         if: success()
         run: |
-          APP=$(grep "^/.*WordBoBo.app" /tmp/diag.log | head -1)
+          APP=$(find ./build -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
-          if [ -n "$APP" ] && [ -d "$APP" ]; then
+          if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
@@ -63,8 +69,8 @@ jobs:
           path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
 
-      - name: Show diagnostics on failure
+      - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== DIAG LOG ==="
-          cat /tmp/diag.log
+          echo "=== Build log ==="
+          tail -80 /tmp/build.log
