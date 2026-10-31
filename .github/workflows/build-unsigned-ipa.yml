@@ -13,64 +13,49 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Boot simulator
+      - name: Build for simulator (not archive, just build)
         run: |
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           xcrun simctl boot "$SIM" 2>&1 || true
           sleep 5
-          echo "SIM: $SIM"
-
-      - name: Archive for simulator
-        run: |
-          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun xcodebuild archive \
+          
+          xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
             -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$SIM" \
-            -archivePath ./build/WordBoBo.xcarchive \
+            -derivedDataPath ./DerivedData \
             CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee /tmp/archive.log
-          echo "ARCHIVE EXIT: ${PIPESTATUS[0]}"
+            SKIP_INSTALL=NO \
+            2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app everywhere
+      - name: Find .app and package IPA
         if: success()
         run: |
-          echo "=== xcarchive top ==="
-          ls -la ./build/WordBoBo.xcarchive/ 2>/dev/null
-          echo "=== Products ==="
-          ls -la ./build/WordBoBo.xcarchive/Products/ 2>/dev/null
-          find ./build/WordBoBo.xcarchive/Products -type d 2>/dev/null | head -20
-          echo "=== All .app in xcarchive ==="
-          find ./build/WordBoBo.xcarchive -name "*.app" -type d 2>/dev/null
-          echo "=== All .app in DerivedData ==="
-          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>/dev/null | head -10
-          echo "=== Archive log - built product paths ==="
-          grep -i "built.*app\|product.*path\|PRODUCT_NAME\|TARGET_BUILD_DIR" /tmp/archive.log | tail -20
-
-      - name: Package IPA
-        if: success()
-        run: |
-          # Search everywhere for the .app
-          APP=$(find ./build -name "*.app" -type d | head -1)
-          if [ -z "$APP" ]; then
-            APP=$(find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d | head -1)
-          fi
-          if [ -z "$APP" ]; then
-            APP=$(find /Users/runner -name "WordBoBo.app" -type d | head -1)
-          fi
+          echo "=== DerivedData tree ==="
+          find ./DerivedData -maxdepth 5 -type d 2>/dev/null | head -30
+          echo "=== All .app ==="
+          find ./DerivedData -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== Build log - product path ==="
+          grep -i "TARGET_BUILD_DIR\|PRODUCT_NAME\|\.app" /tmp/build.log | tail -20
           
+          APP=$(find ./DerivedData -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
+          
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
             zip -r WordBoBo-unsigned.ipa Payload/
             cd ..
+            echo "IPA:"
             ls -lh ./build/WordBoBo-unsigned.ipa
+            echo "IPA contains:"
+            unzip -l ./build/WordBoBo-unsigned.ipa | head -10
           else
-            echo "NO APP FOUND ANYWHERE"
+            echo "NO APP FOUND"
             exit 1
           fi
 
@@ -84,9 +69,7 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Archive log ==="
-          cat /tmp/archive.log
-          echo "=== All .app ==="
+          echo "=== Build log ==="
+          cat /tmp/build.log
+          echo "=== All .app on system ==="
           find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
-          echo "=== Build dir ==="
-          find ./build -type d 2>/dev/null | head -30
