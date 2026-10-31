@@ -13,43 +13,51 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build and export unsigned IPA
+      - name: List available simulators
         run: |
-          # Archive
-          xcodebuild archive \
+          xcrun simctl list runtimes 2>&1 | head -20
+          xcrun simctl list devices available 2>&1 | head -20
+
+      - name: Build for specific simulator
+        run: |
+          xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -archivePath ./build/WordBoBo.xcarchive \
+            -destination 'platform=iOS Simulator,OS=17.2' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
-            | tee /tmp/archive.log
-          echo "ARCHIVE EXIT: $?"
+            BUILD_DIR=./build/Products \
+            BUILD_ROOT=./build \
+            OBJROOT=./build/obj \
+            SYMROOT=./build \
+            2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT: $?"
 
-          # Export
-          xcodebuild -exportArchive \
-            -archivePath ./build/WordBoBo.xcarchive \
-            -exportPath ./build/ipa \
-            -exportOptionsPlist exportOptions.plist \
-            | tee /tmp/export.log
-          echo "EXPORT EXIT: $?"
-
-      - name: Package IPA
+      - name: Find .app
         if: success()
         run: |
-          echo "=== IPA dir ==="
-          find ./build/ipa -type f 2>/dev/null
-          find ./build -name "*.ipa" -type f 2>/dev/null
+          echo "=== Build dir ==="
+          find ./build -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== DerivedData ==="
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== Log grep for .app path ==="
+          grep -i "\\.app" /tmp/build.log | head -10
           
-          IPA=$(find ./build -name "*.ipa" -type f | head -1)
-          echo "IPA: $IPA"
-          if [ -n "$IPA" ]; then
-            echo "IPA size:"
-            ls -lh "$IPA"
+          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          echo "APP: $APP"
+          if [ -n "$APP" ]; then
+            mkdir -p ./build/Payload
+            cp -R "$APP" ./build/Payload/
+            cd ./build
+            zip -r WordBoBo-unsigned.ipa Payload/
+            cd ..
+            echo "IPA:"
+            ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO IPA FOUND"
+            echo "NO APP FOUND"
             exit 1
           fi
 
@@ -57,15 +65,10 @@ jobs:
         if: success()
         with:
           name: WordBoBo-unsigned-ipa
-          path: ./build/ipa/*.ipa
+          path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
 
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Archive log tail ==="
-          tail -40 /tmp/archive.log 2>/dev/null
-          echo "=== Export log tail ==="
-          tail -40 /tmp/export.log 2>/dev/null
-          echo "=== Build dir ==="
-          find ./build -type d 2>/dev/null | head -20
+          tail -60 /tmp/build.log 2>/dev/null
