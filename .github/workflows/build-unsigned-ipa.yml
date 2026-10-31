@@ -13,34 +13,33 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app for iOS Simulator
+      - name: Build for testing (forces compilation)
         run: |
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'platform=iOS Simulator,OS=17.2,name=iPhone 15' \
+            -destination 'platform=iOS Simulator,OS=17.2' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
             2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: ${PIPESTATUS[0]}"
+          echo "BUILD EXIT: $?"
 
-      - name: Find and package IPA
+      - name: Find .app
         if: success()
         run: |
-          echo "=== Find .app ==="
-          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          echo "=== Build dir ==="
+          find ./build -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== DerivedData ==="
           find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
-          
-          # Also get build settings to find path
-          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -showBuildSettings 2>&1 | tee /tmp/settings.log
-          TARGET_BUILD_DIR=$(grep "TARGET_BUILD_DIR" /tmp/settings.log | head -1 | awk '{print $3}')
-          FULL_PRODUCT_NAME=$(grep "FULL_PRODUCT_NAME" /tmp/settings.log | head -1 | awk '{print $3}')
-          echo "Expected: $TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
-          ls -la "$TARGET_BUILD_DIR" 2>/dev/null || echo "Dir not found: $TARGET_BUILD_DIR"
-          
+          echo "=== Log grep ==="
+          grep -i "built.*product\|target.*output\|error:" /tmp/build.log | tail -20
+
+      - name: Package IPA
+        if: success()
+        run: |
           APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
@@ -62,10 +61,7 @@ jobs:
           path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
 
-      - name: Show full logs on failure
+      - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== BUILD LOG ==="
-          cat /tmp/build.log
-          echo "=== SETTINGS LOG ==="
-          cat /tmp/settings.log
+          tail -80 /tmp/build.log
