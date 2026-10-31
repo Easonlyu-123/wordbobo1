@@ -13,27 +13,23 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build with SPM
+      - name: Find and boot simulator
+        id: sim
         run: |
-          swift build \
-            --configuration release \
-            --triple arm64-apple-ios15.0 \
-            2>&1 | tee /tmp/spm.log
-          echo "SPM EXIT: $?"
-
-      - name: Find build products
-        if: success()
-        run: |
-          find .build -type f 2>/dev/null | head -20
-          find .build -name "*.app" -type d 2>/dev/null | head -5
-          cat /tmp/spm.log | tail -20
-
-      - name: Build with xcodebuild (fallback)
-        if: failure()
-        run: |
+          xcrun simctl list runtimes available 2>&1 | head -10
+          echo "---"
+          xcrun simctl list devices available 2>&1 | head -20
+          
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
+          echo "sim_id=$SIM" >> $GITHUB_OUTPUT
           xcrun simctl boot "$SIM" 2>&1 || true
-          sleep 3
+          sleep 5
+          echo "Booted: $SIM"
+
+      - name: Build .app for simulator
+        run: |
+          SIM="${{ steps.sim.outputs.sim_id }}"
+          echo "Building for simulator: $SIM"
           
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
@@ -42,14 +38,23 @@ jobs:
             -destination "platform=iOS Simulator,id=$SIM" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            2>&1 | tee /tmp/xcbuild.log
-          echo "XCBUILD EXIT: ${PIPESTATUS[0]}"
+            2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT: ${PIPESTATUS[0]}"
+          
+          echo "=== BUILD LOG ==="
+          cat /tmp/build.log
 
-      - name: Find .app (fallback)
-        if: failure()
+      - name: Find .app in DerivedData
+        if: success()
         run: |
-          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -10
-          cat /tmp/xcbuild.log | tail -30
+          echo "=== All .app on system ==="
+          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null
+          echo "=== DerivedData tree ==="
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 4 -type d 2>/dev/null | head -30
+          
+          # Also grep build log for product path
+          echo "=== Log product references ==="
+          grep -i "product\|target\|\.app\|build/" /tmp/build.log | grep -v "^--" | tail -20
 
       - name: Package IPA
         if: success()
@@ -75,10 +80,10 @@ jobs:
           path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
 
-      - name: Show logs on failure
+      - name: Show all logs on failure
         if: failure()
         run: |
-          echo "=== SPM LOG ==="
-          cat /tmp/spm.log 2>/dev/null
-          echo "=== XCBUILD LOG ==="
-          cat /tmp/xcbuild.log 2>/dev/null
+          echo "=== BUILD LOG ==="
+          cat /tmp/build.log
+          echo "=== ALL .APP ==="
+          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
