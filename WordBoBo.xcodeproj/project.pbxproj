@@ -40,7 +40,7 @@
 		1000100e /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		20001001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		20001002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		20001003 /* WordBoBo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WordBoBo.entitlements; sourceTree = "<group>"; };
+		20001003 /* WordBoBo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WordBoBo/Resources/WordBoBo.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
