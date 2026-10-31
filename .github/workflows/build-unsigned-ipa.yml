@@ -21,46 +21,87 @@ jobs:
           ls -la WordBoBo/
           echo "=== xcodebuild -list ==="
           xcodebuild -project WordBoBo.xcodeproj -list 2>&1
-      - name: Diagnostic build (no archive)
+      - name: Create export options (unsigned)
         run: |
-          xcodebuild build \
+          cat > /tmp/ExportOptions.plist << 'PLISTEOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>developer-id</string>
+    <key>signingCertificate</key>
+    <string></string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>teamID</key>
+    <string></string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+</dict>
+</plist>
+PLISTEOF
+          echo "ExportOptions.plist created"
+      - name: Archive (unsigned)
+        run: |
+          xcodebuild archive \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
             -destination 'generic/platform=iOS' \
+            -archivePath ./build/WordBoBo.xcarchive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
-            SYMROOT=./build \
-            2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: $?"
-      - name: Show build log
+            2>&1 | tee /tmp/archive.log
+          echo "ARCHIVE EXIT: $?"
+      - name: Show archive log
         run: |
-          echo "=== Build log (last 80 lines) ==="
-          tail -80 /tmp/build.log
-      - name: Find any output
+          echo "=== Archive log (last 60 lines) ==="
+          tail -60 /tmp/archive.log
+      - name: Find archive
         run: |
           echo "=== Build dir ==="
-          find ./build -type f 2>/dev/null | head -20
-          echo "=== Derived data ==="
-          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>/dev/null | head -5
-          find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo" -type f 2>/dev/null | head -5
-      - name: Package IPA
+          find ./build -type f -o -type d | head -20
+          find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.xcarchive" -type d 2>/dev/null | head -5
+      - name: Export IPA from archive
         run: |
-          APP=$(find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d | head -1)
-          if [ -z "$APP" ]; then
-            APP=$(find ./build -name "*.app" -type d | head -1)
+          ARCHIVE="./build/WordBoBo.xcarchive"
+          if [ ! -d "$ARCHIVE" ]; then
+            ARCHIVE=$(find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.xcarchive" -type d | head -1)
           fi
-          echo "APP: $APP"
-          if [ -n "$APP" ]; then
-            mkdir -p ./build/Payload
-            cp -R "$APP" ./build/Payload/
-            cd ./build
-            zip -r WordBoBo-unsigned.ipa Payload/
-            cd ..
-            echo "IPA:"
-            ls -lh ./build/WordBoBo-unsigned.ipa
+          echo "ARCHIVE: $ARCHIVE"
+          if [ -n "$ARCHIVE" ]; then
+            xcodebuild -exportArchive \
+              -archivePath "$ARCHIVE" \
+              -exportPath ./build \
+              -exportOptionsPlist /tmp/ExportOptions.plist \
+              2>&1 | tee /tmp/export.log
+            echo "EXPORT EXIT: $?"
+            echo "=== IPA files ==="
+            find ./build -name "*.ipa" -type f -ls 2>/dev/null
+          fi
+      - name: Fallback: package from .app if export failed
+        run: |
+          if [ ! -f ./build/WordBoBo-unsigned.ipa ]; then
+            echo "No IPA from export, trying fallback..."
+            APP=$(find ./build -name "*.app" -type d | head -1)
+            if [ -z "$APP" ]; then
+              APP=$(find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d | head -1)
+            fi
+            echo "APP: $APP"
+            if [ -n "$APP" ]; then
+              mkdir -p ./build/Payload
+              cp -R "$APP" ./build/Payload/
+              cd ./build
+              zip -r WordBoBo-unsigned.ipa Payload/
+              cd ..
+              echo "IPA:"
+              ls -lh ./build/WordBoBo-unsigned.ipa
+            fi
           fi
       - uses: actions/upload-artifact@v4
         with:
