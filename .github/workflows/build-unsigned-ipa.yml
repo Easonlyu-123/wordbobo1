@@ -13,17 +13,14 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: List available simulators
+      - name: Build, find, and package IPA
         run: |
-          xcrun simctl list devices available 2>&1
-
-      - name: Build .app for iOS Simulator
-        run: |
-          xcrun xcodebuild build \
+          set -o pipefail
+          xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'platform=iOS Simulator,OS=17.2' \
+            -destination 'platform=iOS Simulator,OS=17.2,name=iPhone 15' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -35,20 +32,15 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app in known locations
-        run: |
-          echo "=== Build/Products ==="
-          ls -la ./build/Products/ 2>/dev/null || echo "No Products dir"
-          find ./build -name "*.app" -type d 2>/dev/null
-          echo "=== DerivedData ==="
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 5 -name "WordBoBo.app" -type d 2>/dev/null
-          echo "=== Log: last built product ==="
-          grep -i "built.*product\|target.*output\|writing.*objects" /tmp/build.log | tail -10
+          echo "=== Search for .app ==="
+          find ./build -name "WordBoBo.app" -type d 2>/dev/null
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
+          echo "=== Build log grep ==="
+          grep -i "error:\|warning:\|target.*build\|built.*product\|\.app" /tmp/build.log | tail -20
+          echo "=== Build dir tree ==="
+          find ./build -type f -o -type d 2>/dev/null | head -30
 
-      - name: Package IPA
-        if: success()
-        run: |
-          APP=$(find ./build -name "WordBoBo.app" -type d | head -1)
+          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
@@ -58,7 +50,7 @@ jobs:
             cd ..
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP FOUND"
+            echo "NO APP FOUND - Build may not have produced output"
             exit 1
           fi
 
@@ -69,8 +61,8 @@ jobs:
           path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
 
-      - name: Show logs on failure
+      - name: Show full logs on failure
         if: failure()
         run: |
-          echo "=== Build log ==="
-          tail -80 /tmp/build.log
+          echo "=== FULL BUILD LOG ==="
+          cat /tmp/build.log
