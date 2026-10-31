@@ -13,11 +13,12 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app for simulator
+      - name: Build .app for simulator and capture everything
         run: |
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           xcrun simctl boot "$SIM" 2>&1 || true
           sleep 5
+          echo "SIM: $SIM"
 
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
@@ -27,21 +28,27 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: ${PIPESTATUS[0]}"
+          BUILD_EXIT=${PIPESTATUS[0]}
+          echo "BUILD EXIT: $BUILD_EXIT"
 
-      - name: Find .app and package IPA
-        if: success()
-        run: |
-          echo "=== Build log - last 20 lines ==="
-          tail -20 /tmp/build.log
-          echo "=== Search .app in project dir ==="
-          find . -maxdepth 8 -name "WordBoBo.app" -type d 2>/dev/null
-          echo "=== Search DerivedData ==="
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 5 -name "WordBoBo.app" -type d 2>/dev/null
-          
-          APP=$(find . -maxdepth 8 -name "WordBoBo.app" -type d 2>/dev/null | head -1)
+          # Save diagnostics
+          echo "=== Build log tail ===" >> /tmp/diag.log
+          tail -30 /tmp/build.log >> /tmp/diag.log
+          echo "=== Find .app in common paths ===" >> /tmp/diag.log
+          find ./build -name "*.app" -type d 2>/dev/null >> /tmp/diag.log
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 5 -name "WordBoBo.app" -type d 2>/dev/null >> /tmp/diag.log
+          find /Users/runner -maxdepth 8 -name "WordBoBo.app" -type d 2>/dev/null >> /tmp/diag.log
+          echo "=== DONE ===" >> /tmp/diag.log
+          cat /tmp/diag.log
+
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "Build failed"
+            exit 1
+          fi
+
+          APP=$(grep "^/.*WordBoBo.app" /tmp/diag.log | head -1)
           echo "APP: $APP"
-          if [ -n "$APP" ]; then
+          if [ -n "$APP" ] && [ -d "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
@@ -63,7 +70,5 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== BUILD LOG ==="
+          cat /tmp/diag.log
           cat /tmp/build.log
-          echo "=== ALL .APP ==="
-          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
