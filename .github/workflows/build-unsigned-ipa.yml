@@ -17,15 +17,19 @@ jobs:
         run: |
           echo "=== Files ==="
           ls -la
-          echo "=== xcodeproj ==="
+          echo "=== xcodeproj contents ==="
           ls -la WordBoBo.xcodeproj/
           test -f WordBoBo.xcodeproj/project.pbxproj && echo "pbxproj exists" || exit 1
           echo "=== Source files ==="
           ls -la WordBoBo/
-          echo "=== xcodebuild -list ==="
-          xcodebuild -project WordBoBo.xcodeproj -list 2>&1
+          echo "=== Scheme location ==="
+          ls -la WordBoBo.xcodeproj/xcshareddata/xcschemes/ 2>&1
+          echo "=== xcodebuild -list (verbose) ==="
+          xcodebuild -project WordBoBo.xcodeproj -list 2>&1 || echo "xcodebuild -list FAILED with code $?"
+          echo "=== xcodebuild -list with scheme ==="
+          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -showBuildSettings 2>&1 | head -30 || echo "showBuildSettings FAILED with code $?"
 
-      - name: Diagnostic build
+      - name: Build .app
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
