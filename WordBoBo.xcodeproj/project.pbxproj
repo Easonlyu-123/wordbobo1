@@ -25,21 +25,21 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		10001001 /* WordBoBoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBoApp.swift; sourceTree = "<group>"; };
-		10001002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		10001003 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
-		10001004 /* WordConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordConfirmView.swift; sourceTree = "<group>"; };
-		10001005 /* StudyRouterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyRouterView.swift; sourceTree = "<group>"; };
-		10001006 /* StudyStage1View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage1View.swift; sourceTree = "<group>"; };
-		10001007 /* StudyStage2View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage2View.swift; sourceTree = "<group>"; };
-		10001008 /* StudyStage3View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyStage3View.swift; sourceTree = "<group>"; };
-		10001009 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
-		1000100a /* ManualInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualInputView.swift; sourceTree = "<group>"; };
-		1000100c /* Word.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Word.swift; sourceTree = "<group>"; };
-		1000100d /* WordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordStore.swift; sourceTree = "<group>"; };
-		1000100e /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
-		20001001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		20001002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		10001001 /* WordBoBoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/WordBoBoApp.swift; sourceTree = "<group>"; };
+		10001002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/ContentView.swift; sourceTree = "<group>"; };
+		10001003 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/CameraPreviewView.swift; sourceTree = "<group>"; };
+		10001004 /* WordConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/WordConfirmView.swift; sourceTree = "<group>"; };
+		10001005 /* StudyRouterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyRouterView.swift; sourceTree = "<group>"; };
+		10001006 /* StudyStage1View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyStage1View.swift; sourceTree = "<group>"; };
+		10001007 /* StudyStage2View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyStage2View.swift; sourceTree = "<group>"; };
+		10001008 /* StudyStage3View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/StudyStage3View.swift; sourceTree = "<group>"; };
+		10001009 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/HistoryView.swift; sourceTree = "<group>"; };
+		1000100a /* ManualInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/ManualInputView.swift; sourceTree = "<group>"; };
+		1000100c /* Word.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/Word.swift; sourceTree = "<group>"; };
+		1000100d /* WordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/WordStore.swift; sourceTree = "<group>"; };
+		1000100e /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordBoBo/OCRService.swift; sourceTree = "<group>"; };
+		20001001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WordBoBo/Resources/Assets.xcassets; sourceTree = "<group>"; };
+		20001002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = WordBoBo/Info.plist; sourceTree = "<group>"; };
 		20001003 /* WordBoBo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WordBoBo/Resources/WordBoBo.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -95,8 +95,8 @@
 /* Begin XCBuildConfiguration section */
 		3000000b /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
 		3000000c /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = s; GCC_PREPROCESSOR_DEFINITIONS = ("NDEBUG=1", "$(inherited)"); INFOPLIST_FILE = WordBoBo/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
-		3000000e /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = 9J9BX9XZXZ; ENABLE_PREVIEWS = YES; INFOPLIST_FILE = WordBoBo/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
-		3000000f /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = 9J9BX9XZXZ; ENABLE_PREVIEWS = YES; INFOPLIST_FILE = WordBoBo/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+		3000000e /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = 9J9BX9XZXZ; ENABLE_PREVIEWS = YES; INFOPLIST_FILE = WordBoBo/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		3000000f /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = 9J9BX9XZXZ; ENABLE_PREVIEWS = YES; INFOPLIST_FILE = WordBoBo/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "单词背背"; INFOPLIST_KEY_CFBundleShortVersionString = "1.0.0"; INFOPLIST_KEY_UIRequiresFullScreen = YES; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.wordbobo.app; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
