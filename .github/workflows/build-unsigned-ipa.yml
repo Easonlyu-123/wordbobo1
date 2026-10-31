@@ -13,69 +13,66 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build for simulator
+      - name: Create ad-hoc provisioning profile
         run: |
-          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun simctl boot "$SIM" 2>&1 || true
-          sleep 5
+          # Create a self-signed cert for ad-hoc signing
+          security create-keychain -p "" build.keychain
+          security import /Applications/Xcode.app/Contents/Resources/UserCertificates/Apple\ Development\ iOS\ Signing\ Cert.cer -k build.keychain -A 2>/dev/null || true
+          security list-keychains -d user
           
-          xcrun xcodebuild build \
+          # Use Xcode's built-in ability to create ad-hoc signed build
+          # Set up a dummy development team and let Xcode handle provisioning
+          defaults write com.apple.dt.Xcode IDECodeSigningRepair -bool YES 2>/dev/null || true
+
+      - name: Build and archive for device
+        run: |
+          # Use a real device destination with Xcode auto-provisioning
+          xcodebuild archive \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -sdk iphonesimulator \
-            -destination "platform=iOS Simulator,id=$SIM" \
-            -derivedDataPath ./DerivedData \
-            2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: ${PIPESTATUS[0]}"
+            -archivePath ./build/WordBoBo.xcarchive \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=9J9BX9XZXZ \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            2>&1 | tee /tmp/archive.log
+          echo "ARCHIVE EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app and package IPA
+      - name: Export IPA
         if: success()
         run: |
-          echo "=== DerivedData tree ===" > /tmp/find.log
-          find ./DerivedData -maxdepth 6 -type d >> /tmp/find.log
-          echo "=== All .app ===" >> /tmp/find.log
-          find /Users/runner -name "*.app" -type d 2>/dev/null >> /tmp/find.log
-          echo "=== Log grep ===" >> /tmp/find.log
-          grep -i "TARGET_BUILD_DIR\|PRODUCT_NAME\|built\|error:\|warning:" /tmp/build.log | tail -30 >> /tmp/find.log
-          cat /tmp/find.log
+          echo "=== xcarchive tree ==="
+          find ./build/WordBoBo.xcarchive -maxdepth 4 -type d 2>/dev/null
+          echo "=== Products ==="
+          ls -la ./build/WordBoBo.xcarchive/Products/ 2>/dev/null
           
-          APP=$(find ./DerivedData -name "WordBoBo.app" -type d | head -1)
-          echo "APP: $APP"
-          
-          if [ -n "$APP" ]; then
-            mkdir -p ./build/Payload
-            cp -R "$APP" ./build/Payload/
-            cd ./build
-            zip -r WordBoBo-unsigned.ipa Payload/
-            cd ..
-            ls -lh ./build/WordBoBo-unsigned.ipa
-          else
-            echo "NO APP FOUND"
-            exit 1
-          fi
+          xcodebuild -exportArchive \
+            -archivePath ./build/WordBoBo.xcarchive \
+            -exportPath ./build/ipa \
+            -exportOptionsPlist exportOptions.plist \
+            2>&1 | tee /tmp/export.log
+          echo "EXPORT EXIT: ${PIPESTATUS[0]}"
+
+      - name: Show IPA
+        if: success()
+        run: |
+          find ./build -name "*.ipa" -type f 2>/dev/null
+          ls -lh ./build/ipa/ 2>/dev/null
 
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: WordBoBo-unsigned-ipa
-          path: ./build/WordBoBo-unsigned.ipa
+          path: ./build/ipa/*.ipa
           retention-days: 30
 
-      - name: Upload logs on failure
+      - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Uploading logs ==="
-          cat /tmp/find.log
-          cat /tmp/build.log | tail -50
-          # Save logs to repo for debugging
-          cp /tmp/build.log ./build.log
-          cp /tmp/find.log ./find.log
-          
-      - name: Show logs on failure (final)
-        if: failure()
-        run: |
-          echo "=== Build log ==="
-          cat /tmp/build.log 2>/dev/null | tail -80
-          echo "=== Find log ==="
-          cat /tmp/find.log 2>/dev/null
+          echo "=== Archive log ==="
+          cat /tmp/archive.log 2>/dev/null | tail -60
+          echo "=== Export log ==="
+          cat /tmp/export.log 2>/dev/null | tail -30
+          echo "=== xcarchive ==="
+          find ./build -type d 2>/dev/null | head -30
