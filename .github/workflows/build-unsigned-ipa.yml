@@ -13,7 +13,7 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app for iOS Simulator
+      - name: Build .app
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
@@ -27,24 +27,16 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-      - name: Diagnose build output
-        run: |
-          echo "=== Build log tail (30 lines) ==="
-          tail -30 /tmp/build.log
-          echo "=== Search for .app ==="
-          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -10
-          echo "=== Any .app ==="
-          find /Users/runner -maxdepth 8 -name "*.app" -type d 2>/dev/null | head -10
-          echo "=== Build Products ==="
-          find ./build -type d 2>/dev/null | head -20
+          # Find .app and write path to file
+          APP=$(find /Users/runner -maxdepth 8 -name "WordBoBo.app" -type d 2>/dev/null | head -1)
+          echo "$APP" > /tmp/app_path.txt
+          echo "APP: $APP"
 
       - name: Package IPA
-        if: success()
         run: |
-          APP=$(find /Users/runner -maxdepth 8 -name "WordBoBo.app" -type d | head -1)
-          echo "APP: $APP"
-          if [ -n "$APP" ]; then
+          APP=$(cat /tmp/app_path.txt)
+          echo "APP from file: $APP"
+          if [ -n "$APP" ] && [ -d "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
@@ -66,7 +58,9 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Build log ==="
-          cat /tmp/build.log
+          echo "=== APP path file ==="
+          cat /tmp/app_path.txt 2>/dev/null
+          echo "=== Build log tail ==="
+          tail -60 /tmp/build.log 2>/dev/null
           echo "=== Find results ==="
           find /Users/runner -maxdepth 8 -name "*.app" -type d 2>/dev/null | head -10
