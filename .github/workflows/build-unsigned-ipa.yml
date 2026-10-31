@@ -13,7 +13,7 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build for simulator (not archive, just build)
+      - name: Build for simulator
         run: |
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           xcrun simctl boot "$SIM" 2>&1 || true
@@ -26,20 +26,19 @@ jobs:
             -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$SIM" \
             -derivedDataPath ./DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            SKIP_INSTALL=NO \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
       - name: Find .app and package IPA
         if: success()
         run: |
-          echo "=== DerivedData tree ==="
-          find ./DerivedData -maxdepth 5 -type d 2>/dev/null | head -30
-          echo "=== All .app ==="
-          find ./DerivedData -name "*.app" -type d 2>/dev/null | head -10
-          echo "=== Build log - product path ==="
-          grep -i "TARGET_BUILD_DIR\|PRODUCT_NAME\|\.app" /tmp/build.log | tail -20
+          echo "=== DerivedData tree ===" > /tmp/find.log
+          find ./DerivedData -maxdepth 6 -type d >> /tmp/find.log
+          echo "=== All .app ===" >> /tmp/find.log
+          find /Users/runner -name "*.app" -type d 2>/dev/null >> /tmp/find.log
+          echo "=== Log grep ===" >> /tmp/find.log
+          grep -i "TARGET_BUILD_DIR\|PRODUCT_NAME\|built\|error:\|warning:" /tmp/build.log | tail -30 >> /tmp/find.log
+          cat /tmp/find.log
           
           APP=$(find ./DerivedData -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
@@ -50,10 +49,7 @@ jobs:
             cd ./build
             zip -r WordBoBo-unsigned.ipa Payload/
             cd ..
-            echo "IPA:"
             ls -lh ./build/WordBoBo-unsigned.ipa
-            echo "IPA contains:"
-            unzip -l ./build/WordBoBo-unsigned.ipa | head -10
           else
             echo "NO APP FOUND"
             exit 1
@@ -66,10 +62,20 @@ jobs:
           path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
 
-      - name: Show logs on failure
+      - name: Upload logs on failure
+        if: failure()
+        run: |
+          echo "=== Uploading logs ==="
+          cat /tmp/find.log
+          cat /tmp/build.log | tail -50
+          # Save logs to repo for debugging
+          cp /tmp/build.log ./build.log
+          cp /tmp/find.log ./find.log
+          
+      - name: Show logs on failure (final)
         if: failure()
         run: |
           echo "=== Build log ==="
-          cat /tmp/build.log
-          echo "=== All .app on system ==="
-          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
+          cat /tmp/build.log 2>/dev/null | tail -80
+          echo "=== Find log ==="
+          cat /tmp/find.log 2>/dev/null
