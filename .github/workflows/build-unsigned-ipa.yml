@@ -34,28 +34,43 @@ jobs:
             2>&1 | tee /tmp/archive.log
           echo "ARCHIVE EXIT: ${PIPESTATUS[0]}"
 
+      - name: Find .app everywhere
+        if: success()
+        run: |
+          echo "=== xcarchive top ==="
+          ls -la ./build/WordBoBo.xcarchive/ 2>/dev/null
+          echo "=== Products ==="
+          ls -la ./build/WordBoBo.xcarchive/Products/ 2>/dev/null
+          find ./build/WordBoBo.xcarchive/Products -type d 2>/dev/null | head -20
+          echo "=== All .app in xcarchive ==="
+          find ./build/WordBoBo.xcarchive -name "*.app" -type d 2>/dev/null
+          echo "=== All .app in DerivedData ==="
+          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== Archive log - built product paths ==="
+          grep -i "built.*app\|product.*path\|PRODUCT_NAME\|TARGET_BUILD_DIR" /tmp/archive.log | tail -20
+
       - name: Package IPA
         if: success()
         run: |
-          echo "=== xcarchive ==="
-          find ./build/WordBoBo.xcarchive -maxdepth 4 -type d 2>/dev/null
-          echo "=== Products/Applications ==="
-          find ./build/WordBoBo.xcarchive -path "*/Applications/*" 2>/dev/null
+          # Search everywhere for the .app
+          APP=$(find ./build -name "*.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            APP=$(find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d | head -1)
+          fi
+          if [ -z "$APP" ]; then
+            APP=$(find /Users/runner -name "WordBoBo.app" -type d | head -1)
+          fi
           
-          APP=$(find ./build/WordBoBo.xcarchive -path "*/Applications/*.app" -type d | head -1)
           echo "APP: $APP"
-          
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
             zip -r WordBoBo-unsigned.ipa Payload/
             cd ..
-            echo "=== IPA ==="
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP IN ARCHIVE"
-            tail -40 /tmp/archive.log
+            echo "NO APP FOUND ANYWHERE"
             exit 1
           fi
 
@@ -69,8 +84,9 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
+          echo "=== Archive log ==="
           cat /tmp/archive.log
-          echo "=== Build dir ==="
-          find ./build -type d 2>/dev/null | head -20
           echo "=== All .app ==="
           find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
+          echo "=== Build dir ==="
+          find ./build -type d 2>/dev/null | head -30
