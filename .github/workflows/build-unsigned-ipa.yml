@@ -13,36 +13,40 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Boot simulator
+      - name: Get build settings
         run: |
-          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun simctl boot "$SIM" 2>&1 || true
-          sleep 5
-          echo "SIM: $SIM"
+          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -showBuildSettings 2>&1 | tee /tmp/settings.log
+          echo "=== KEY SETTINGS ==="
+          grep -E "TARGET_BUILD_DIR|FULL_PRODUCT_NAME|BUILT_PRODUCTS_DIR|SDKROOT|PLATFORM_NAME" /tmp/settings.log | head -10
 
-      - name: Archive for iOS Simulator
+      - name: Build for generic iOS
         run: |
-          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun xcodebuild archive \
+          xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -archivePath ./build/WordBoBo.xcarchive \
-            -destination "platform=iOS Simulator,id=$SIM" \
+            -destination 'generic/platform=iOS' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            2>&1 | tee /tmp/archive.log
-          echo "ARCHIVE EXIT: ${PIPESTATUS[0]}"
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT: $?"
 
-      - name: Extract .app from xcarchive and package IPA
-        if: success()
+      - name: Find and package IPA
         run: |
-          echo "=== xcarchive contents ==="
-          find ./build/WordBoBo.xcarchive -type f -o -type d 2>/dev/null | head -30
+          echo "=== Build dir ==="
+          find ./build -type d 2>/dev/null | head -20
+          echo "=== Expected path from settings ==="
+          TARGET_BUILD_DIR=$(grep "TARGET_BUILD_DIR = " /tmp/settings.log | head -1 | sed 's/TARGET_BUILD_DIR = //')
+          FULL_PRODUCT_NAME=$(grep "FULL_PRODUCT_NAME = " /tmp/settings.log | head -1 | sed 's/FULL_PRODUCT_NAME = //')
+          echo "Expected: $TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
+          ls -la "$TARGET_BUILD_DIR" 2>/dev/null || echo "Dir not found"
           
-          APP=$(find ./build/WordBoBo.xcarchive -name "WordBoBo.app" -type d | head -1)
+          echo "=== Log grep ==="
+          grep -i "\.app\|built product\|error:" /tmp/build.log | tail -20
+          
+          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
-          
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
@@ -51,9 +55,7 @@ jobs:
             cd ..
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP IN ARCHIVE"
-            echo "=== Archive log ==="
-            tail -30 /tmp/archive.log
+            echo "NO APP FOUND"
             exit 1
           fi
 
@@ -67,7 +69,7 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Archive log ==="
-          cat /tmp/archive.log
-          echo "=== xcarchive ==="
-          find ./build -type d 2>/dev/null | head -20
+          echo "=== BUILD LOG ==="
+          cat /tmp/build.log
+          echo "=== SETTINGS ==="
+          cat /tmp/settings.log
