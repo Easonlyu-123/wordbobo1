@@ -18,28 +18,31 @@ jobs:
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           xcrun simctl boot "$SIM" 2>&1 || true
           sleep 5
+          echo "SIM: $SIM"
 
-      - name: Archive for simulator
+      - name: Build .app for simulator (no signing flags)
         run: |
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun xcodebuild archive \
+          xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -archivePath ./build/WordBoBo.xcarchive \
+            -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$SIM" \
-            | tee /tmp/archive.log
-          echo "ARCHIVE EXIT: ${PIPESTATUS[0]}"
+            2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Package IPA from xcarchive
+      - name: Package IPA
         if: success()
         run: |
-          echo "=== xcarchive tree ==="
-          find ./build/WordBoBo.xcarchive -maxdepth 3 -type d 2>/dev/null
+          echo "=== Build log - last 30 lines ==="
+          tail -30 /tmp/build.log
+          echo "=== Find .app ==="
+          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
           
-          APP=$(find ./build/WordBoBo.xcarchive -path "*/Applications/*.app" -type d | head -1)
+          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
-          
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
@@ -48,8 +51,7 @@ jobs:
             cd ..
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP"
-            tail -20 /tmp/archive.log
+            echo "NO APP FOUND"
             exit 1
           fi
 
@@ -63,5 +65,5 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          cat /tmp/archive.log
-          find ./build -type d 2>/dev/null | head -20
+          cat /tmp/build.log
+          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
