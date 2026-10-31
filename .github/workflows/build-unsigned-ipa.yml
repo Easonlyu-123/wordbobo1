@@ -13,8 +13,9 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app with explicit output path
+      - name: Build .app
         run: |
+          set -o pipefail
           xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
@@ -24,23 +25,33 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
-            TARGET_BUILD_DIR=./build/Products/Release-iphoneos \
-            FULL_PRODUCT_NAME=WordBoBo.app \
-            BUILT_PRODUCTS_DIR=./build/Products/Release-iphoneos \
+            BUILD_DIR=./build/Products \
+            BUILD_ROOT=./build \
+            OBJROOT=./build/obj \
+            SYMROOT=./build \
             2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: $?"
+          BUILD_EXIT=${PIPESTATUS[0]}
+          echo "BUILD EXIT: $BUILD_EXIT"
+
+          # Try to extract .app path from build log
+          APP_PATH=$(grep -oE '"/[^"]*WordBoBo\.app"' /tmp/build.log | head -1 | tr -d '"')
+          if [ -z "$APP_PATH" ]; then
+            APP_PATH=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          fi
+          echo "APP_PATH: $APP_PATH"
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+
+          if [ "$BUILD_EXIT" -ne 0 ]; then
+            echo "Build failed"
+            exit 1
+          fi
 
       - name: Package IPA
         if: success()
         run: |
-          echo "=== Build dir ==="
-          find ./build -type d 2>/dev/null | head -30
-          echo "=== Log grep ==="
-          grep -i "target.build.dir\|built.products\|product.path\|full.product" /tmp/build.log | head -10
-          
-          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          APP="${{ env.APP_PATH }}"
           echo "APP: $APP"
-          if [ -n "$APP" ]; then
+          if [ -n "$APP" ] && [ -d "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
@@ -49,7 +60,8 @@ jobs:
             echo "IPA:"
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP FOUND"
+            echo "NO APP FOUND at: $APP"
+            find . -maxdepth 10 -name "*.app" -type d 2>/dev/null | head -10
             exit 1
           fi
 
@@ -64,4 +76,4 @@ jobs:
         if: failure()
         run: |
           tail -60 /tmp/build.log 2>/dev/null
-          find ./build -type d 2>/dev/null | head -30
+          find ./build -type d 2>/dev/null | head -20
