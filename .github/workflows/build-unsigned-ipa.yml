@@ -38,9 +38,11 @@ jobs:
         if: always()
         run: |
           echo "=== SYMROOT ./build contents ==="
-          find ./build -type f -o -type d 2>/dev/null | head -30
+          find ./build -type f -o -type d 2>/dev/null | head -50
           echo "=== DerivedData search ==="
-          find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -5
+          find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          echo "=== Any .app anywhere ==="
+          find . -name "*.app" -type d 2>/dev/null | head -10
 
       - name: Package IPA
         if: success()
