@@ -25,6 +25,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
             SYMROOT=./build \
+            OBJROOT=./build/obj \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
@@ -37,17 +38,17 @@ jobs:
       - name: Locate .app
         if: always()
         run: |
-          echo "=== SYMROOT ./build contents ==="
-          find ./build -type f -o -type d 2>/dev/null | head -50
-          echo "=== DerivedData search ==="
-          find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -10
-          echo "=== Any .app anywhere ==="
-          find . -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== SYMROOT ./build ==="
+          find ./build -name "*.app" -type d 2>/dev/null
+          echo "=== DerivedData ==="
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 3 -name "WordBoBo.app" -type d 2>/dev/null
+          echo "=== All .app ==="
+          find . -maxdepth 5 -name "*.app" -type d 2>/dev/null
 
       - name: Package IPA
         if: success()
         run: |
-          APP=$(find . -name "WordBoBo.app" -type d | head -1)
+          APP=$(find . -maxdepth 5 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
