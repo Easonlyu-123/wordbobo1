@@ -16,23 +16,16 @@ jobs:
       - name: Find available simulator
         id: find_sim
         run: |
-          SIM=$(xcrun simctl list devices available | grep -E "iPhone .* \(.*17\." | head -1 | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}')
-          if [ -z "$SIM" ]; then
-            SIM=$(xcrun simctl list devices available | grep -E "iPhone .* \(" | head -1 | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}')
-          fi
+          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           echo "sim_id=$SIM" >> $GITHUB_OUTPUT
-          echo "SIMULATOR: $SIM"
 
-      - name: Build, find, and package IPA
+      - name: Build .app for iOS Simulator
         run: |
-          SIM="${{ steps.find_sim.outputs.sim_id }}"
-          echo "Using simulator: $SIM"
-          
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination "platform=iOS Simulator,id=$SIM" \
+            -destination "platform=iOS Simulator,id=${{ steps.find_sim.outputs.sim_id }}" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -40,16 +33,17 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-          # Find .app
-          echo "=== Search for .app ==="
-          find . -name "WordBoBo.app" -type d 2>/dev/null
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
-          echo "=== Log grep ==="
-          grep -i "built.*product\|target.*output\|error:" /tmp/build.log | tail -20
+      - name: Find .app everywhere
+        if: success()
+        run: |
+          echo "=== Find ANY .app ==="
+          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
+          echo "=== Build log - last 30 lines ==="
+          tail -30 /tmp/build.log
           
-          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
           echo "APP: $APP"
-          if [ -n "$APP" ] && [ -d "$APP" ]; then
+          if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
@@ -71,4 +65,5 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
+          echo "=== BUILD LOG ==="
           cat /tmp/build.log
