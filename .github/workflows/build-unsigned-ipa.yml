@@ -13,12 +13,15 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build for simulator with derivedDataPath
+      - name: List available simulators
+        run: xcrun simctl list devices available
+
+      - name: Build for simulator
         run: |
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun simctl boot "$SIM" 2>&1 || true
-          sleep 5
+          echo "SIM: $SIM"
           
+          # Don't boot simulator - just build
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
@@ -26,40 +29,36 @@ jobs:
             -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$SIM" \
             -derivedDataPath ./DerivedData \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app in derived data and package IPA
+      - name: Find and package IPA
         if: success()
         run: |
-          echo "=== DerivedData tree ==="
+          echo "=== DerivedData ==="
           find ./DerivedData -maxdepth 6 -type d 2>/dev/null | head -40
-          echo "=== All .app in DerivedData ==="
-          find ./DerivedData -name "*.app" -type d 2>/dev/null | head -10
-          echo "=== Build log grep ==="
-          grep -i "TARGET_BUILD_DIR\|BUILT_PRODUCTS_DIR\|PRODUCT_NAME\|built\|error:" /tmp/build.log | tail -30
+          echo "=== All .app ==="
+          find . -name "*.app" -type d 2>/dev/null | head -10
+          find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -5
+          echo "=== Log tail ==="
+          tail -20 /tmp/build.log
           
-          # Look in multiple places
-          APP=$(find ./DerivedData -name "WordBoBo.app" -type d | head -1)
-          if [ -z "$APP" ]; then
-            APP=$(find /Users/runner/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -1)
-          fi
+          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          [ -z "$APP" ] && APP=$(find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           
-          if [ -n "$APP" ]; then
-            mkdir -p ./build/Payload
-            cp -R "$APP" ./build/Payload/
-            cd ./build
-            zip -r WordBoBo-unsigned.ipa Payload/
-            cd ..
-            ls -lh ./build/WordBoBo-unsigned.ipa
-          else
-            echo "NO APP FOUND"
+          if [ -z "$APP" ]; then
+            echo "NO APP"
             exit 1
           fi
+          
+          mkdir -p ./build/Payload
+          cp -R "$APP" ./build/Payload/
+          cd ./build
+          zip -r WordBoBo-unsigned.ipa Payload/
+          cd ..
+          ls -lh ./build/WordBoBo-unsigned.ipa
 
       - uses: actions/upload-artifact@v4
         if: success()
@@ -72,5 +71,5 @@ jobs:
         if: failure()
         run: |
           cat /tmp/build.log | tail -60
-          echo "=== All .app ==="
-          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
+          find . -name "*.app" -type d 2>/dev/null | head -10
+          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>/dev/null | head -10
