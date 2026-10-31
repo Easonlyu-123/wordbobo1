@@ -13,45 +13,47 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Verify project works
+      - name: Build with SPM
         run: |
-          xcodebuild -project WordBoBo.xcodeproj -list 2>&1
-          echo "LIST EXIT: $?"
+          swift build \
+            --configuration release \
+            --triple arm64-apple-ios15.0 \
+            2>&1 | tee /tmp/spm.log
+          echo "SPM EXIT: $?"
 
-      - name: Build for any available simulator
+      - name: Find build products
+        if: success()
         run: |
-          # Get first available simulator runtime
-          RUNTIME=$(xcrun simctl list runtimes available | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9]+-[0-9]+' | head -1)
-          echo "Runtime: $RUNTIME"
-          
-          # Get first available device
-          DEVICE=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          echo "Device: $DEVICE"
-          
-          # Boot it
-          xcrun simctl boot "$DEVICE" 2>&1 || true
+          find .build -type f 2>/dev/null | head -20
+          find .build -name "*.app" -type d 2>/dev/null | head -5
+          cat /tmp/spm.log | tail -20
+
+      - name: Build with xcodebuild (fallback)
+        if: failure()
+        run: |
+          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
+          xcrun simctl boot "$SIM" 2>&1 || true
           sleep 3
           
-          # Build
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination "platform=iOS Simulator,id=$DEVICE" \
+            -destination "platform=iOS Simulator,id=$SIM" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: ${PIPESTATUS[0]}"
+            2>&1 | tee /tmp/xcbuild.log
+          echo "XCBUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app
+      - name: Find .app (fallback)
+        if: failure()
+        run: |
+          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          cat /tmp/xcbuild.log | tail -30
+
+      - name: Package IPA
         if: success()
         run: |
-          echo "=== Full find ==="
-          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null
-          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
-          echo "=== Build log grep ==="
-          grep -i "error:\|warning:\|built.*product\|target.*output\|skipping\|sdk.*not" /tmp/build.log | tail -30
-          
           APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
@@ -76,9 +78,7 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== BUILD LOG ==="
-          cat /tmp/build.log
-          echo "=== Simulators ==="
-          xcrun simctl list devices available 2>&1 | head -20
-          echo "=== Runtimes ==="
-          xcrun simctl list runtimes available 2>&1 | head -20
+          echo "=== SPM LOG ==="
+          cat /tmp/spm.log 2>/dev/null
+          echo "=== XCBUILD LOG ==="
+          cat /tmp/xcbuild.log 2>/dev/null
