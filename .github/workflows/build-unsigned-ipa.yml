@@ -13,62 +13,52 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: List available simulators
+      - name: Archive
         run: |
-          xcrun simctl list runtimes 2>&1 | head -20
-          xcrun simctl list devices available 2>&1 | head -20
-
-      - name: Build for specific simulator
-        run: |
-          xcrun xcodebuild build \
+          xcodebuild archive \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'platform=iOS Simulator,OS=17.2' \
+            -archivePath ./build/WordBoBo.xcarchive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
-            BUILD_DIR=./build/Products \
-            BUILD_ROOT=./build \
-            OBJROOT=./build/obj \
-            SYMROOT=./build \
-            2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: $?"
+            | tee /tmp/archive.log
+          echo "ARCHIVE EXIT: $?"
 
-      - name: Find .app
+      - name: Export IPA
         if: success()
         run: |
-          echo "=== Build dir ==="
-          find ./build -name "*.app" -type d 2>/dev/null | head -10
-          echo "=== DerivedData ==="
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "*.app" -type d 2>/dev/null | head -10
-          echo "=== Log grep for .app path ==="
-          grep -i "\\.app" /tmp/build.log | head -10
+          echo "=== Archive contents ==="
+          find ./build/WordBoBo.xcarchive -maxdepth 2 -type d 2>/dev/null | head -20
           
-          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
-          echo "APP: $APP"
-          if [ -n "$APP" ]; then
-            mkdir -p ./build/Payload
-            cp -R "$APP" ./build/Payload/
-            cd ./build
-            zip -r WordBoBo-unsigned.ipa Payload/
-            cd ..
-            echo "IPA:"
-            ls -lh ./build/WordBoBo-unsigned.ipa
-          else
-            echo "NO APP FOUND"
-            exit 1
-          fi
+          xcodebuild -exportArchive \
+            -archivePath ./build/WordBoBo.xcarchive \
+            -exportPath ./build/ipa \
+            -exportOptionsPlist exportOptions.plist \
+            | tee /tmp/export.log
+          echo "EXPORT EXIT: $?"
+
+      - name: Show IPA
+        if: success()
+        run: |
+          find ./build -name "*.ipa" -type f 2>/dev/null
+          ls -lh ./build/ipa/ 2>/dev/null
 
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: WordBoBo-unsigned-ipa
-          path: ./build/WordBoBo-unsigned.ipa
+          path: ./build/ipa/*.ipa
           retention-days: 30
 
       - name: Show logs on failure
         if: failure()
         run: |
-          tail -60 /tmp/build.log 2>/dev/null
+          echo "=== Archive log tail ==="
+          tail -40 /tmp/archive.log 2>/dev/null
+          echo "=== Export log tail ==="
+          tail -40 /tmp/export.log 2>/dev/null
+          echo "=== Build dir ==="
+          find ./build -type d 2>/dev/null | head -20
