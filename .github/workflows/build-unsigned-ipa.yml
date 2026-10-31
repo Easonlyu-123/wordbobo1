@@ -10,61 +10,96 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show Xcode version
-        run: xcodebuild -version
-
-      - name: Boot simulator
+      - name: Show Xcode version and list simulators
         run: |
-          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun simctl boot "$SIM" 2>&1 || true
-          sleep 5
-          echo "SIM: $SIM"
+          xcodebuild -version
+          xcrun simctl list devices available
 
-      - name: Archive for simulator
+      - name: Fix pbxproj - remove signing requirements
         run: |
-          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          xcrun xcodebuild archive \
+          python3 << 'PY'
+          import re
+          with open('WordBoBo.xcodeproj/project.pbxproj', 'r') as f:
+              content = f.read()
+          # Remove CODE_SIGN from all build settings
+          content = re.sub(r'CODE_SIGN[A-Z_]*\s*=\s*[^;]+;', 'CODE_SIGNING_ALLOWED = NO;', content)
+          # Ensure all configs have CODE_SIGNING_ALLOWED = NO
+          content = content.replace('};', 'CODE_SIGNING_ALLOWED = NO; };')
+          # Revert - only replace the config section endings
+          content = content.replace('CODE_SIGNING_ALLOWED = NO; };', '};')
+          # Add CODE_SIGNING_ALLOWED = NO to every build configuration
+          content = re.sub(
+              r'(buildSettings = \{[^}]*?)(buildSettings = \{)',
+              r'\1CODE_SIGNING_ALLOWED = NO;\n\2',
+              content
+          )
+          with open('WordBoBo.xcodeproj/project.pbxproj', 'w') as f:
+              f.write(content)
+          print("pbxproj patched")
+          PY
+
+      - name: Build for generic iOS (archive)
+        run: |
+          xcodebuild archive \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
             -archivePath ./build/WordBoBo.xcarchive \
-            -destination "platform=iOS Simulator,id=$SIM" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee /tmp/archive.log
           echo "ARCHIVE EXIT: ${PIPESTATUS[0]}"
 
-      - name: Package IPA from xcarchive
+      - name: Check archive and extract .app
         if: success()
         run: |
-          echo "=== xcarchive tree ==="
-          find ./build/WordBoBo.xcarchive -maxdepth 3 -type d 2>/dev/null
+          echo "=== Archive tree ==="
+          find ./build/WordBoBo.xcarchive -maxdepth 4 -type d 2>/dev/null
+          echo "=== Products ==="
+          ls -la ./build/WordBoBo.xcarchive/Products/ 2>/dev/null
+          echo "=== Apps ==="
+          find ./build/WordBoBo.xcarchive -name "*.app" -type d 2>/dev/null | head -5
+
+      - name: Export unsigned IPA
+        if: success()
+        run: |
+          # Try xcodebuild -exportArchive first
+          xcodebuild -exportArchive \
+            -archivePath ./build/WordBoBo.xcarchive \
+            -exportPath ./build/ipa \
+            -exportOptionsPlist exportOptions.plist \
+            2>&1 | tee /tmp/export.log
+          echo "EXPORT EXIT: ${PIPESTATUS[0]}"
           
-          APP=$(find ./build/WordBoBo.xcarchive -path "*/Applications/*.app" -type d | head -1)
-          echo "APP: $APP"
-          
-          if [ -n "$APP" ]; then
-            mkdir -p ./build/Payload
-            cp -R "$APP" ./build/Payload/
-            cd ./build
-            zip -r WordBoBo-unsigned.ipa Payload/
-            cd ..
-            ls -lh ./build/WordBoBo-unsigned.ipa
-          else
-            echo "NO APP IN ARCHIVE"
-            tail -30 /tmp/archive.log
-            exit 1
+          # If exportArchive fails, manually package
+          if [ ! -f ./build/ipa/*.ipa ]; then
+            echo "exportArchive failed, manual packaging"
+            APP=$(find ./build/WordBoBo.xcarchive -path "*/Applications/*.app" -type d | head -1)
+            echo "APP: $APP"
+            if [ -n "$APP" ]; then
+              mkdir -p ./build/ipa/Payload
+              cp -R "$APP" ./build/ipa/Payload/
+              cd ./build/ipa
+              zip -r WordBoBo-unsigned.ipa Payload/
+              cd ../..
+            fi
           fi
+          
+          ls -lh ./build/ipa/ 2>/dev/null
 
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: WordBoBo-unsigned-ipa
-          path: ./build/WordBoBo-unsigned.ipa
+          path: ./build/ipa/*.ipa
           retention-days: 30
 
       - name: Show logs on failure
         if: failure()
         run: |
-          cat /tmp/archive.log
-          find ./build -type d 2>/dev/null | head -20
+          echo "=== Archive log ==="
+          cat /tmp/archive.log 2>/dev/null
+          echo "=== Export log ==="
+          cat /tmp/export.log 2>/dev/null
+          echo "=== xcarchive ==="
+          find ./build -type d 2>/dev/null | head -30

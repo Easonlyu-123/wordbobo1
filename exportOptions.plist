@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>ad-hoc</string>
+    <string>development</string>
     <key>signingCertificate</key>
     <string></string>
     <key>signingStyle</key>
-    <string>manual</string>
+    <string>automatic</string>
     <key>teamID</key>
     <string></string>
     <key>stripSwiftSymbols</key>
@@ -15,10 +15,6 @@
     <key>uploadBitcode</key>
     <false/>
     <key>compileBitcode</key>
-    <false/>
-    <key>destination</key>
-    <string>export</string>
-    <key>generateAppThinningSet</key>
     <false/>
     <key>thinning</key>
     <string>&lt;none&gt;</string>
