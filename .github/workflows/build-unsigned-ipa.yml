@@ -13,12 +13,15 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Get build settings
+      - name: Build .app and capture settings
         run: |
-          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -showBuildSettings 2>&1 | tee /tmp/settings.log
-
-      - name: Build .app (no signing)
-        run: |
+          # Get build settings first
+          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -showBuildSettings 2>&1 | tee /tmp/settings.log
+          echo "---"
+          BUILT_DIR=$(grep "BUILT_PRODUCTS_DIR" /tmp/settings.log | head -1 | awk '{print $3}')
+          echo "BUILT_PRODUCTS_DIR: $BUILT_DIR"
+          
+          # Build
           xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
@@ -28,24 +31,17 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
-            SYMROOT=./build \
-            OBJROOT=./build/obj \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-      - name: Find and package IPA
+      - name: Package IPA
+        if: success()
         run: |
-          echo "=== Build settings (BUILT_PRODUCTS_DIR) ==="
-          grep "BUILT_PRODUCTS_DIR" /tmp/settings.log | head -5
           echo "=== Find .app ==="
           find . -name "WordBoBo.app" -type d 2>/dev/null
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 4 -name "WordBoBo.app" -type d 2>/dev/null
-          echo "=== Build dir contents ==="
-          find ./build -type d 2>/dev/null | head -20
-          echo "=== Full build log tail ==="
-          tail -30 /tmp/build.log
-
-          APP=$(find . -maxdepth 6 -name "WordBoBo.app" -type d | head -1)
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 5 -name "WordBoBo.app" -type d 2>/dev/null
+          
+          APP=$(find . -maxdepth 8 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
@@ -61,7 +57,16 @@ jobs:
           fi
 
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: WordBoBo-unsigned-ipa
           path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Build log tail ==="
+          tail -50 /tmp/build.log 2>/dev/null
+          echo "=== Settings log ==="
+          cat /tmp/settings.log 2>/dev/null
