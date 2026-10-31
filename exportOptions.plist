@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>developer-id</string>
+    <key>signingCertificate</key>
+    <string></string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>teamID</key>
+    <string></string>
+    <key>stripSwiftSymbols</key>
+    <false/>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>compileBitcode</key>
+    <false/>
+    <key>destination</key>
+    <string>export</string>
+    <key>generateAppThinningSet</key>
+    <false/>
+    <key>manifest</key>
+    <dict>
+        <key>appURL</key>
+        <string></string>
+        <key>displayImageURL</key>
+        <string></string>
+        <key>fullSizeImageURL</key>
+        <string></string>
+    </dict>
+    <key>onDemandResourcesAssetPacksBaseURL</key>
+    <string></string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.wordbobo.app</key>
+        <string>match Development com.wordbobo.app</string>
+    </dict>
+</dict>
+</plist>
