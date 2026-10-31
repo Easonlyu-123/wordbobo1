@@ -13,13 +13,13 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app for simulator (no signing)
+      - name: Build .app for archive
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'platform=iOS Simulator,id=xxxx' \
+            -destination 'generic/platform=iOS' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -31,15 +31,21 @@ jobs:
             | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-      - name: Find and package IPA
+      - name: Find .app anywhere
         if: success()
         run: |
-          echo "=== Build dir ==="
-          find ./build -type d 2>/dev/null | head -30
-          echo "=== DerivedData .app ==="
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 5 -name "WordBoBo.app" -type d 2>/dev/null | head -10
-          
-          APP=$(find . -maxdepth 8 -name "WordBoBo.app" -type d | head -1)
+          echo "=== All .app files ==="
+          find . -name "WordBoBo.app" -type d 2>/dev/null
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          echo "=== Full build dir tree ==="
+          find ./build -type f -o -type d 2>/dev/null | head -50
+          echo "=== Build log - last 40 lines ==="
+          tail -40 /tmp/build.log
+
+      - name: Package IPA
+        if: success()
+        run: |
+          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
@@ -64,5 +70,4 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Build log tail ==="
           tail -60 /tmp/build.log 2>/dev/null
