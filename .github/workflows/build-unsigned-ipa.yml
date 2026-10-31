@@ -15,46 +15,41 @@ jobs:
 
       - name: Build, find, and package IPA
         run: |
-          # Boot simulator
           SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
           xcrun simctl boot "$SIM" 2>&1 || true
           sleep 5
-          echo "Simulator: $SIM"
 
-          # Build
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
+            -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$SIM" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-          # Find .app - search everywhere
-          echo "=== Searching for .app ==="
-          APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
-          echo "APP: $APP"
-          
-          if [ -z "$APP" ]; then
-            echo "=== Not in /Users/runner, checking build dir ==="
-            find ./build -name "*.app" -type d 2>/dev/null | head -10
-            find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
-            echo "=== Build log grep ==="
-            grep -i "\.app\|built product\|target output\|error:" /tmp/build.log | tail -20
-            echo "NO APP FOUND"
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "Build failed"
+            tail -40 /tmp/build.log
             exit 1
           fi
 
-          # Package IPA
-          mkdir -p ./build/Payload
-          cp -R "$APP" ./build/Payload/
-          cd ./build
-          zip -r WordBoBo-unsigned.ipa Payload/
-          cd ..
-          echo "IPA:"
-          ls -lh ./build/WordBoBo-unsigned.ipa
+          APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
+          echo "APP: $APP"
+          if [ -n "$APP" ]; then
+            mkdir -p ./build/Payload
+            cp -R "$APP" ./build/Payload/
+            cd ./build
+            zip -r WordBoBo-unsigned.ipa Payload/
+            cd ..
+            ls -lh ./build/WordBoBo-unsigned.ipa
+          else
+            echo "NO APP FOUND"
+            tail -40 /tmp/build.log
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         if: success()
@@ -66,7 +61,5 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== BUILD LOG ==="
           cat /tmp/build.log
-          echo "=== ALL .APP ==="
           find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
