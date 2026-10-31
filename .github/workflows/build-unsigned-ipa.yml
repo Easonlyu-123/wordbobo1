@@ -13,9 +13,17 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build, find, and package IPA
+      - name: Build .app and capture settings
         run: |
           set -o pipefail
+          
+          # Get build settings
+          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -showBuildSettings 2>&1 | tee /tmp/settings.log
+          
+          echo "=== KEY SETTINGS ==="
+          grep -E "TARGET_BUILD_DIR|FULL_PRODUCT_NAME|BUILT_PRODUCTS_DIR|PRODUCT_NAME|SDKROOT|PLATFORM_NAME" /tmp/settings.log | head -10
+          
+          # Build
           xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
@@ -32,13 +40,19 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-          echo "=== Search for .app ==="
-          find ./build -name "WordBoBo.app" -type d 2>/dev/null
+          echo "=== SEARCH FOR .app ==="
+          find ./build -name "*.app" -type d 2>/dev/null
           find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
-          echo "=== Build log grep ==="
-          grep -i "error:\|warning:\|target.*build\|built.*product\|\.app" /tmp/build.log | tail -20
-          echo "=== Build dir tree ==="
-          find ./build -type f -o -type d 2>/dev/null | head -30
+          find /Users/runner -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
+          
+          echo "=== BUILD LOG - lines with 'app' ==="
+          grep -i "\.app\|built product\|target output\|write.*object" /tmp/build.log | tail -20
+          
+          echo "=== CHECK EXPECTED PATH ==="
+          TARGET_BUILD_DIR=$(grep "TARGET_BUILD_DIR" /tmp/settings.log | head -1 | awk '{print $3}')
+          FULL_PRODUCT_NAME=$(grep "FULL_PRODUCT_NAME" /tmp/settings.log | head -1 | awk '{print $3}')
+          echo "Expected: $TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
+          ls -la "$TARGET_BUILD_DIR" 2>/dev/null || echo "Dir not found: $TARGET_BUILD_DIR"
 
           APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
@@ -50,7 +64,7 @@ jobs:
             cd ..
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP FOUND - Build may not have produced output"
+            echo "NO APP FOUND"
             exit 1
           fi
 
@@ -64,5 +78,7 @@ jobs:
       - name: Show full logs on failure
         if: failure()
         run: |
-          echo "=== FULL BUILD LOG ==="
+          echo "=== SETTINGS LOG ==="
+          cat /tmp/settings.log
+          echo "=== BUILD LOG ==="
           cat /tmp/build.log
