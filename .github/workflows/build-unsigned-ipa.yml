@@ -13,13 +13,13 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app with explicit paths
+      - name: Build .app for simulator (no signing)
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -sdk iphoneos \
+            -destination 'platform=iOS Simulator,id=xxxx' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -28,7 +28,7 @@ jobs:
             BUILD_ROOT=./build \
             OBJROOT=./build/obj \
             SYMROOT=./build \
-            2>&1 | tee /tmp/build.log
+            | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
       - name: Find and package IPA
@@ -65,4 +65,4 @@ jobs:
         if: failure()
         run: |
           echo "=== Build log tail ==="
-          tail -50 /tmp/build.log 2>/dev/null
+          tail -60 /tmp/build.log 2>/dev/null
