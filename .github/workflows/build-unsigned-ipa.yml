@@ -13,17 +13,6 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Verify project structure
-        run: |
-          echo "=== Files ==="
-          ls -la
-          echo "=== xcodeproj ==="
-          ls -la WordBoBo.xcodeproj/
-          echo "=== Source files ==="
-          ls -la WordBoBo/
-          echo "=== xcodebuild -list ==="
-          xcodebuild -project WordBoBo.xcodeproj -list 2>&1
-
       - name: Build .app (no signing)
         run: |
           xcodebuild build \
@@ -40,20 +29,21 @@ jobs:
           echo "BUILD EXIT: $?"
 
       - name: Show build log
+        if: always()
         run: |
-          echo "=== Build log (last 60 lines) ==="
-          tail -60 /tmp/build.log
+          echo "=== Build log (last 80 lines) ==="
+          tail -80 /tmp/build.log
 
       - name: Locate .app
+        if: always()
         run: |
           echo "=== SYMROOT ./build contents ==="
           find ./build -type f -o -type d 2>/dev/null | head -30
           echo "=== DerivedData search ==="
           find ~/Library/Developer/Xcode/DerivedData -name "WordBoBo.app" -type d 2>/dev/null | head -5
-          echo "=== Any .app anywhere ==="
-          find . -name "*.app" -type d 2>/dev/null | head -10
 
       - name: Package IPA
+        if: success()
         run: |
           APP=$(find . -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
@@ -71,6 +61,7 @@ jobs:
           fi
 
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: WordBoBo-unsigned-ipa
           path: ./build/WordBoBo-unsigned.ipa
