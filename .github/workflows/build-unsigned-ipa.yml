@@ -13,36 +13,42 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build for testing (forces compilation)
+      - name: Build .app for iOS Simulator
         run: |
-          xcodebuild build-for-testing \
+          xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
             -destination 'platform=iOS Simulator,OS=17.2' \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ENABLE_CODE_SIGNING=NO \
-            2>&1 | tee /tmp/build.log
-          echo "BUILD EXIT: $?"
+            | tee /tmp/build.log
+          BUILD_STATUS=$?
+          echo "BUILD STATUS: $BUILD_STATUS"
+          
+          if [ $BUILD_STATUS -ne 0 ]; then
+            echo "Build failed with exit code $BUILD_STATUS"
+            exit $BUILD_STATUS
+          fi
 
-      - name: Find .app
+      - name: Find .app path
         if: success()
         run: |
-          echo "=== Build dir ==="
-          find ./build -name "*.app" -type d 2>/dev/null | head -10
-          echo "=== DerivedData ==="
+          echo "=== Search for .app ==="
+          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
           find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
-          echo "=== Log grep ==="
-          grep -i "built.*product\|target.*output\|error:" /tmp/build.log | tail -20
+          
+          # Get settings to find expected path
+          xcrun xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -showBuildSettings 2>&1 | tee /tmp/settings.log
+          TARGET_BUILD_DIR=$(grep "TARGET_BUILD_DIR = " /tmp/settings.log | head -1 | sed 's/TARGET_BUILD_DIR = //')
+          FULL_PRODUCT_NAME=$(grep "FULL_PRODUCT_NAME = " /tmp/settings.log | head -1 | sed 's/FULL_PRODUCT_NAME = //')
+          echo "Expected path: $TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
+          ls -la "$TARGET_BUILD_DIR" 2>/dev/null || echo "Dir not found"
 
       - name: Package IPA
         if: success()
         run: |
           APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
-          if [ -n "$APP" ]; then
+          if [ -n "$APP" ] && [ -d "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
@@ -64,4 +70,7 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          tail -80 /tmp/build.log
+          echo "=== BUILD LOG ==="
+          cat /tmp/build.log
+          echo "=== SETTINGS LOG ==="
+          cat /tmp/settings.log
