@@ -85,7 +85,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		30000008 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (20000001, 20000002, 20000003); runOnlyForDeploymentPostprocessing = 0; };
+		30000008 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (20000001, 20000003); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
