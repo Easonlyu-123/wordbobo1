@@ -13,34 +13,54 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Get build settings
+        run: |
+          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -configuration Release -showBuildSettings 2>&1 | tee /tmp/settings.log
+          grep "TARGET_BUILD_DIR" /tmp/settings.log | head -3
+          grep "FULL_PRODUCT_NAME" /tmp/settings.log | head -3
+          grep "BUILT_PRODUCTS_DIR" /tmp/settings.log | head -3
+
       - name: Build .app
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
-            -target WordBoBo \
+            -scheme WordBoBo \
             -configuration Release \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_CODE_SIGNING=NO \
-            BUILD_DIR=./build/Products \
-            BUILD_ROOT=./build \
-            OBJROOT=./build/obj \
-            SYMROOT=./build \
             | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-      - name: Find and package IPA
+      - name: Find .app using build settings
+        run: |
+          echo "=== TARGET_BUILD_DIR ==="
+          TARGET_BUILD_DIR=$(grep "TARGET_BUILD_DIR" /tmp/settings.log | head -1 | awk '{print $3}')
+          FULL_PRODUCT_NAME=$(grep "FULL_PRODUCT_NAME" /tmp/settings.log | head -1 | awk '{print $3}')
+          echo "TARGET_BUILD_DIR: $TARGET_BUILD_DIR"
+          echo "FULL_PRODUCT_NAME: $FULL_PRODUCT_NAME"
+          
+          echo "=== Check that path ==="
+          ls -la "$TARGET_BUILD_DIR" 2>/dev/null || echo "Path not found: $TARGET_BUILD_DIR"
+          
+          echo "=== Search everywhere ==="
+          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "*.app" -type d 2>/dev/null | head -10
+          
+          echo "=== Build log tail ==="
+          tail -30 /tmp/build.log
+
+      - name: Package IPA
         if: success()
         run: |
-          echo "=== Build dir ==="
-          find ./build -name "*.app" -type d 2>/dev/null
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
+          TARGET_BUILD_DIR=$(grep "TARGET_BUILD_DIR" /tmp/settings.log | head -1 | awk '{print $3}')
+          FULL_PRODUCT_NAME=$(grep "FULL_PRODUCT_NAME" /tmp/settings.log | head -1 | awk '{print $3}')
           
-          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          APP="$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME"
           echo "APP: $APP"
-          if [ -n "$APP" ]; then
+          if [ -d "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
             cd ./build
@@ -49,8 +69,21 @@ jobs:
             echo "IPA:"
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP FOUND"
-            exit 1
+            echo "APP not found at $APP"
+            # Fallback: search
+            APP=$(find . -maxdepth 10 -name "*.app" -type d | head -1)
+            if [ -n "$APP" ]; then
+              mkdir -p ./build/Payload
+              cp -R "$APP" ./build/Payload/
+              cd ./build
+              zip -r WordBoBo-unsigned.ipa Payload/
+              cd ..
+              echo "IPA (fallback):"
+              ls -lh ./build/WordBoBo-unsigned.ipa
+            else
+              echo "NO APP FOUND"
+              exit 1
+            fi
           fi
 
       - uses: actions/upload-artifact@v4
@@ -64,5 +97,4 @@ jobs:
         if: failure()
         run: |
           tail -60 /tmp/build.log 2>/dev/null
-          echo "---BUILD DIR---"
-          find ./build -type d 2>/dev/null | head -30
+          cat /tmp/settings.log 2>/dev/null | head -60
