@@ -13,43 +13,47 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Archive .app
+      - name: Find available simulator
+        id: find_sim
         run: |
-          xcodebuild archive \
+          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
+          echo "sim_id=$SIM" >> $GITHUB_OUTPUT
+          echo "SIM: $SIM"
+
+      - name: Build .app for iOS Simulator (no code signing flags)
+        run: |
+          SIM="${{ steps.find_sim.outputs.sim_id }}"
+          xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -archivePath ./build/WordBoBo.xcarchive \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "platform=iOS Simulator,id=$SIM" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ENABLE_CODE_SIGNING=NO \
-            2>&1 | tee /tmp/archive.log
-          echo "ARCHIVE EXIT: $?"
+            2>&1 | tee /tmp/build.log
+          echo "BUILD EXIT: ${PIPESTATUS[0]}"
+          
+          echo "=== LOG TAIL ==="
+          tail -30 /tmp/build.log
 
-      - name: Extract .app from archive and package IPA
+      - name: Find .app
         if: success()
         run: |
-          echo "=== Archive contents ==="
-          find ./build/WordBoBo.xcarchive -type d 2>/dev/null | head -20
+          echo "=== Search ==="
+          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -10
           
-          # Find .app inside xcarchive
-          APP_PATH=$(find ./build/WordBoBo.xcarchive -name "WordBoBo.app" -type d | head -1)
-          echo "APP in archive: $APP_PATH"
-          
-          if [ -n "$APP_PATH" ]; then
+          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          echo "APP: $APP"
+          if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
-            cp -R "$APP_PATH" ./build/Payload/
+            cp -R "$APP" ./build/Payload/
             cd ./build
             zip -r WordBoBo-unsigned.ipa Payload/
             cd ..
-            echo "IPA:"
             ls -lh ./build/WordBoBo-unsigned.ipa
           else
-            echo "NO APP IN ARCHIVE"
-            echo "=== Full archive tree ==="
-            find ./build/WordBoBo.xcarchive 2>/dev/null | head -30
+            echo "NO APP FOUND"
             exit 1
           fi
 
@@ -63,7 +67,4 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Archive log ==="
-          cat /tmp/archive.log
-          echo "=== Build dir ==="
-          find ./build -type d 2>/dev/null | head -20
+          cat /tmp/build.log
