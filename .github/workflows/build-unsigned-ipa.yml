@@ -16,23 +16,23 @@ jobs:
       - name: Find available simulator
         id: find_sim
         run: |
-          SIM=$(xcrun simctl list devices available | grep -E "iPhone .* \(.*17\." | head -1 | sed -n 's/.*\([A-F0-9]\{8\}-[A-F0-9]\{4\}-.*\) (\(.*\)).*/\1/p' | head -1)
+          SIM=$(xcrun simctl list devices available | grep -E "iPhone .* \(.*17\." | head -1 | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}')
           if [ -z "$SIM" ]; then
             SIM=$(xcrun simctl list devices available | grep -E "iPhone .* \(" | head -1 | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}')
           fi
-          echo "SIMULATOR_ID: $SIM"
           echo "sim_id=$SIM" >> $GITHUB_OUTPUT
-          echo "Available sims:"
-          xcrun simctl list devices available 2>&1 | head -20
+          echo "SIMULATOR: $SIM"
 
-      - name: Build .app for iOS Simulator
+      - name: Build, find, and package IPA
         run: |
-          echo "Using simulator: ${{ steps.find_sim.outputs.sim_id }}"
+          SIM="${{ steps.find_sim.outputs.sim_id }}"
+          echo "Using simulator: $SIM"
+          
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination "platform=iOS Simulator,id=${{ steps.find_sim.outputs.sim_id }}" \
+            -destination "platform=iOS Simulator,id=$SIM" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -40,18 +40,13 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app path
-        if: success()
-        run: |
+          # Find .app
           echo "=== Search for .app ==="
-          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          find . -name "WordBoBo.app" -type d 2>/dev/null
           find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -5
           echo "=== Log grep ==="
           grep -i "built.*product\|target.*output\|error:" /tmp/build.log | tail -20
-
-      - name: Package IPA
-        if: success()
-        run: |
+          
           APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ] && [ -d "$APP" ]; then
@@ -76,5 +71,4 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== BUILD LOG ==="
           cat /tmp/build.log
