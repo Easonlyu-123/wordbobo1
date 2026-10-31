@@ -13,7 +13,7 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build .app
+      - name: Build .app and save diagnostics
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
@@ -27,15 +27,23 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-          # Find .app and write path to file
-          APP=$(find /Users/runner -maxdepth 8 -name "WordBoBo.app" -type d 2>/dev/null | head -1)
-          echo "$APP" > /tmp/app_path.txt
-          echo "APP: $APP"
+          # Save ALL diagnostic info
+          echo "=== Find .app everywhere ===" > /tmp/diag.log
+          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null >> /tmp/diag.log
+          echo "=== DerivedData .app ===" >> /tmp/diag.log
+          find ~/Library/Developer/Xcode/DerivedData -name "*.app" -type d 2>/dev/null >> /tmp/diag.log
+          echo "=== Build dir ===" >> /tmp/diag.log
+          find ./build -type d 2>/dev/null >> /tmp/diag.log
+          echo "=== Log grep .app ===" >> /tmp/diag.log
+          grep -i "\\.app" /tmp/build.log >> /tmp/diag.log
+          echo "=== DONE ===" >> /tmp/diag.log
+          cat /tmp/diag.log
 
       - name: Package IPA
+        if: success()
         run: |
-          APP=$(cat /tmp/app_path.txt)
-          echo "APP from file: $APP"
+          APP=$(grep "^/.*WordBoBo.app" /tmp/diag.log | head -1)
+          echo "APP: $APP"
           if [ -n "$APP" ] && [ -d "$APP" ]; then
             mkdir -p ./build/Payload
             cp -R "$APP" ./build/Payload/
@@ -55,12 +63,8 @@ jobs:
           path: ./build/WordBoBo-unsigned.ipa
           retention-days: 30
 
-      - name: Show logs on failure
+      - name: Show diagnostics on failure
         if: failure()
         run: |
-          echo "=== APP path file ==="
-          cat /tmp/app_path.txt 2>/dev/null
-          echo "=== Build log tail ==="
-          tail -60 /tmp/build.log 2>/dev/null
-          echo "=== Find results ==="
-          find /Users/runner -maxdepth 8 -name "*.app" -type d 2>/dev/null | head -10
+          echo "=== DIAG LOG ==="
+          cat /tmp/diag.log
