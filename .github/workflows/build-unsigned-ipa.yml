@@ -13,37 +13,46 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Find available simulator
-        id: find_sim
+      - name: Verify project works
         run: |
-          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
-          echo "sim_id=$SIM" >> $GITHUB_OUTPUT
-          echo "SIM: $SIM"
+          xcodebuild -project WordBoBo.xcodeproj -list 2>&1
+          echo "LIST EXIT: $?"
 
-      - name: Build .app for iOS Simulator (no code signing flags)
+      - name: Build for any available simulator
         run: |
-          SIM="${{ steps.find_sim.outputs.sim_id }}"
+          # Get first available simulator runtime
+          RUNTIME=$(xcrun simctl list runtimes available | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9]+-[0-9]+' | head -1)
+          echo "Runtime: $RUNTIME"
+          
+          # Get first available device
+          DEVICE=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
+          echo "Device: $DEVICE"
+          
+          # Boot it
+          xcrun simctl boot "$DEVICE" 2>&1 || true
+          sleep 3
+          
+          # Build
           xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination "platform=iOS Simulator,id=$SIM" \
+            -destination "platform=iOS Simulator,id=$DEVICE" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
-          
-          echo "=== LOG TAIL ==="
-          tail -30 /tmp/build.log
 
       - name: Find .app
         if: success()
         run: |
-          echo "=== Search ==="
-          find . -maxdepth 10 -name "WordBoBo.app" -type d 2>/dev/null | head -10
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -name "WordBoBo.app" -type d 2>/dev/null | head -10
+          echo "=== Full find ==="
+          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null
+          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
+          echo "=== Build log grep ==="
+          grep -i "error:\|warning:\|built.*product\|target.*output\|skipping\|sdk.*not" /tmp/build.log | tail -30
           
-          APP=$(find . -maxdepth 10 -name "WordBoBo.app" -type d | head -1)
+          APP=$(find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
@@ -67,4 +76,9 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
+          echo "=== BUILD LOG ==="
           cat /tmp/build.log
+          echo "=== Simulators ==="
+          xcrun simctl list devices available 2>&1 | head -20
+          echo "=== Runtimes ==="
+          xcrun simctl list runtimes available 2>&1 | head -20
