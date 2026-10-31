@@ -10,45 +10,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show Xcode version
-        run: xcodebuild -version
-
-      - name: Build for device with signing, save log with build settings
+      - name: Show Xcode version and list simulators
         run: |
-          xcodebuild build \
+          xcodebuild -version
+          xcrun simctl list devices available
+
+      - name: Build for simulator (normal build with signing)
+        run: |
+          SIM=$(xcrun simctl list devices available | grep -oE '[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}' | head -1)
+          xcrun simctl boot "$SIM" 2>&1 || true
+          sleep 5
+          echo "Using SIM: $SIM"
+          
+          xcrun xcodebuild build \
             -project WordBoBo.xcodeproj \
             -scheme WordBoBo \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$SIM" \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=9J9BX9XZXZ \
-            -showBuildSettings \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find .app and package IPA
+      - name: Find .app everywhere and package IPA
         if: success()
         run: |
-          echo "=== TARGET_BUILD_DIR from log ==="
-          grep "TARGET_BUILD_DIR" /tmp/build.log | head -5
-          echo "=== FULL_BUILD_PRODUCT ==="
-          grep "FULL_BUILD_PRODUCT" /tmp/build/log | head -5
-          echo "=== All .app ==="
-          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
-          echo "=== Build dir ==="
-          find ./build -type d 2>/dev/null | head -20
+          echo "=== Build log - last 40 lines ==="
+          tail -40 /tmp/build.log
+          echo "=== All .app on system ==="
+          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -20
+          echo "=== DerivedData products ==="
+          find ~/Library/Developer/Xcode/DerivedData -path "*/Build/Products/*" -type d 2>/dev/null | head -20
           
           APP=$(find /Users/runner -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           
           if [ -z "$APP" ]; then
-            echo "NO APP"
+            echo "NO APP FOUND"
             exit 1
           fi
           
-          # Strip signatures
+          # Strip all signatures to make it unsigned
           xcrun codesign --remove "$APP/WordBoBo" 2>/dev/null || true
-          rm -f "$APP/_CodeSignature/CodeSignature" 2>/dev/null || true
+          rm -rf "$APP/_CodeSignature" 2>/dev/null || true
           rm -f "$APP/embedded.mobileprovision" 2>/dev/null || true
           
           # Package IPA
@@ -57,6 +62,7 @@ jobs:
           cd ./build
           zip -r WordBoBo-unsigned.ipa Payload/
           cd ..
+          echo "=== IPA ==="
           ls -lh ./build/WordBoBo-unsigned.ipa
 
       - uses: actions/upload-artifact@v4
@@ -69,7 +75,8 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          grep -E "TARGET_BUILD_DIR|FULL_BUILD_PRODUCT|BUILT_PRODUCTS_DIR" /tmp/build.log | head -10
+          tail -60 /tmp/build.log
           echo "=== All .app ==="
           find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
-          cat /tmp/build.log | tail -30
+          echo "=== DerivedData ==="
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 4 -type d 2>/dev/null | head -30
