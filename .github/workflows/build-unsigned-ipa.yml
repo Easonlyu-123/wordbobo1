@@ -13,7 +13,7 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build for device (with signing)
+      - name: Build for device with signing, save log with build settings
         run: |
           xcodebuild build \
             -project WordBoBo.xcodeproj \
@@ -22,35 +22,33 @@ jobs:
             -destination 'generic/platform=iOS' \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=9J9BX9XZXZ \
+            -showBuildSettings \
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: ${PIPESTATUS[0]}"
 
-      - name: Find and strip signature, package IPA
+      - name: Find .app and package IPA
         if: success()
         run: |
+          echo "=== TARGET_BUILD_DIR from log ==="
+          grep "TARGET_BUILD_DIR" /tmp/build.log | head -5
+          echo "=== FULL_BUILD_PRODUCT ==="
+          grep "FULL_BUILD_PRODUCT" /tmp/build/log | head -5
           echo "=== All .app ==="
-          find /Users/runner -name "WordBoBo.app" -type d 2>/dev/null | head -10
-          echo "=== Build log - built product ==="
-          grep -i "built.*app\|TARGET_BUILD_DIR\|PRODUCT_NAME" /tmp/build.log | tail -20
+          find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
+          echo "=== Build dir ==="
+          find ./build -type d 2>/dev/null | head -20
           
           APP=$(find /Users/runner -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           
           if [ -z "$APP" ]; then
-            echo "NO APP FOUND"
+            echo "NO APP"
             exit 1
           fi
           
-          # Strip all signatures
-          echo "=== Stripping signatures ==="
-          find "$APP" -type f -exec xcrun codesign --remove {} \; 2>/dev/null || true
+          # Strip signatures
           xcrun codesign --remove "$APP/WordBoBo" 2>/dev/null || true
-          
-          # Remove signature files
-          rm -f "$APP/_CodeSignature/"* 2>/dev/null || true
-          rm -f "$APP/PlugIns/"*/*/_CodeSignature/* 2>/dev/null || true
-          
-          # Remove entitlements
+          rm -f "$APP/_CodeSignature/CodeSignature" 2>/dev/null || true
           rm -f "$APP/embedded.mobileprovision" 2>/dev/null || true
           
           # Package IPA
@@ -59,11 +57,7 @@ jobs:
           cd ./build
           zip -r WordBoBo-unsigned.ipa Payload/
           cd ..
-          echo "=== IPA ==="
           ls -lh ./build/WordBoBo-unsigned.ipa
-          
-          # Verify unsigned
-          xcrun codesign -dv ./build/Payload/WordBoBo.app 2>&1 || echo "Signature removed (expected error)"
 
       - uses: actions/upload-artifact@v4
         if: success()
@@ -75,6 +69,7 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          cat /tmp/build.log | tail -80
+          grep -E "TARGET_BUILD_DIR|FULL_BUILD_PRODUCT|BUILT_PRODUCTS_DIR" /tmp/build.log | head -10
           echo "=== All .app ==="
           find /Users/runner -name "*.app" -type d 2>/dev/null | head -20
+          cat /tmp/build.log | tail -30
