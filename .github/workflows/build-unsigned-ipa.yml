@@ -13,6 +13,10 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Get build settings
+        run: |
+          xcodebuild -project WordBoBo.xcodeproj -scheme WordBoBo -showBuildSettings 2>&1 | tee /tmp/settings.log
+
       - name: Build .app (no signing)
         run: |
           xcodebuild build \
@@ -29,26 +33,19 @@ jobs:
             2>&1 | tee /tmp/build.log
           echo "BUILD EXIT: $?"
 
-      - name: Show build log
-        if: always()
+      - name: Find and package IPA
         run: |
-          echo "=== Build log (last 80 lines) ==="
-          tail -80 /tmp/build.log
+          echo "=== Build settings (BUILT_PRODUCTS_DIR) ==="
+          grep "BUILT_PRODUCTS_DIR" /tmp/settings.log | head -5
+          echo "=== Find .app ==="
+          find . -name "WordBoBo.app" -type d 2>/dev/null
+          find ~/Library/Developer/Xcode/DerivedData -maxdepth 4 -name "WordBoBo.app" -type d 2>/dev/null
+          echo "=== Build dir contents ==="
+          find ./build -type d 2>/dev/null | head -20
+          echo "=== Full build log tail ==="
+          tail -30 /tmp/build.log
 
-      - name: Locate .app
-        if: always()
-        run: |
-          echo "=== SYMROOT ./build ==="
-          find ./build -name "*.app" -type d 2>/dev/null
-          echo "=== DerivedData ==="
-          find ~/Library/Developer/Xcode/DerivedData -maxdepth 3 -name "WordBoBo.app" -type d 2>/dev/null
-          echo "=== All .app ==="
-          find . -maxdepth 5 -name "*.app" -type d 2>/dev/null
-
-      - name: Package IPA
-        if: success()
-        run: |
-          APP=$(find . -maxdepth 5 -name "WordBoBo.app" -type d | head -1)
+          APP=$(find . -maxdepth 6 -name "WordBoBo.app" -type d | head -1)
           echo "APP: $APP"
           if [ -n "$APP" ]; then
             mkdir -p ./build/Payload
@@ -64,7 +61,6 @@ jobs:
           fi
 
       - uses: actions/upload-artifact@v4
-        if: success()
         with:
           name: WordBoBo-unsigned-ipa
           path: ./build/WordBoBo-unsigned.ipa
